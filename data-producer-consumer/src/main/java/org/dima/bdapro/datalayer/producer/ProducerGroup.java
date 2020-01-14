@@ -2,6 +2,7 @@ package org.dima.bdapro.datalayer.producer;
 
 import org.dima.bdapro.datalayer.consumer.ConsumerThread;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,7 +14,7 @@ public final class ProducerGroup {
     private final String brokers;
     private List<ProducerThread> producers;
 
-    public ProducerGroup(String brokers, String groupId, String topic, int numberOfProducers) {
+    public ProducerGroup(String brokers, String groupId, String topic, int numberOfProducers) throws IOException {
         this.brokers = brokers;
         this.topic = topic;
         this.groupId = groupId;

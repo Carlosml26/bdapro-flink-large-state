@@ -46,8 +46,7 @@ public class DataGenerator {
 		int t = ThreadLocalRandom.current().nextInt(0, resellerTypes);
 
 		transaction.setReceiverType(resellers.getTypeName(t));
-		transaction.setReceiverId(resellers.getResellerId(0, ThreadLocalRandom.current().nextInt()));
-		// TODO: maybe check the receiver is the same as sender or not.
+		transaction.setReceiverId(resellers.getResellerId(t, ThreadLocalRandom.current().nextInt(0, resellers.getTypeLength(t))));// TODO: maybe check the receiver is the same as sender or not.
 
 	}
 
@@ -56,7 +55,7 @@ public class DataGenerator {
 		int t = ThreadLocalRandom.current().nextInt(0, resellerTypes);
 
 		transaction.setSenderType(resellers.getTypeName(t));
-		transaction.setSenderId(resellers.getResellerId(0, ThreadLocalRandom.current().nextInt()));
+		transaction.setSenderId(resellers.getResellerId(t, ThreadLocalRandom.current().nextInt(0, resellers.getTypeLength(t))));
 
 
 	}

@@ -33,7 +33,7 @@ public class Resellers {
 			String[] arr = new String[count];
 
 			for (int j = 0; j < count; j++) {
-				arr[j] = String.format(threadId, prefix, count);
+				arr[j] = String.format(format, threadId, prefix, j);
 			}
 			resellers[i] = arr;
 		}
@@ -48,8 +48,12 @@ public class Resellers {
 		return resellerTypes[type];
 	}
 
+	public int getTypeLength(int type) {
+		return resellers[type].length;
+	}
+
 	public String getResellerId(int type, int id) {
-		return resellers[type][id % resellers[type].length];
+		return resellers[type][id];
 	}
 
 

@@ -7,7 +7,9 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.dima.bdapro.datalayer.bean.Transaction;
 import org.dima.bdapro.datalayer.bean.json.TransactionSerializer;
+import org.dima.bdapro.datalayer.generator.DataGenerator;
 
+import java.io.IOException;
 import java.util.Properties;
 
 public class ProducerThread implements Runnable {
@@ -15,13 +17,15 @@ public class ProducerThread implements Runnable {
     private final KafkaProducer<String, Transaction> producer;
     private final String topic;
     private final Integer producerNumber;
+    private final DataGenerator dataGenerator;
 
 
-    public ProducerThread(String brokers, String groupId, String topic, int producerNumber) {
+    public ProducerThread(String brokers, String groupId, String topic, int producerNumber) throws IOException {
         Properties prop = createProducerConfig(brokers,groupId);
         this.producer = new KafkaProducer<String, Transaction>(prop, new StringSerializer(), new TransactionSerializer());
         this.topic = topic;
         this.producerNumber = producerNumber;
+        this.dataGenerator = new DataGenerator(Thread.currentThread().getName());
     }
 
     private static Properties createProducerConfig(String brokers, String groupId) {
@@ -34,7 +38,7 @@ public class ProducerThread implements Runnable {
         props.put("linger.ms", 1);
         props.put("buffer.memory", 33554432);
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("value.serializer", "org.dima.bdapro.datalayer.bean.json.TransactionSerializer");
         return props;
     }
 
@@ -42,9 +46,10 @@ public class ProducerThread implements Runnable {
     public void run() {
         System.out.println("Produces 3 messages");
         for (int i = 0; i < 5; i++) {
-            Transaction msg = new Transaction(null,"Transaction"+i,"Sender"+producerNumber,"SenderType"+producerNumber,"Receiver"+i,"ReceiverType"+i, 50.0);
-
-            producer.send(new ProducerRecord<String, Transaction>(topic, producerNumber.toString(), msg), new Callback() {
+            Transaction msg;
+//            msg = new Transaction(null,"Transaction"+i,"Sender"+producerNumber,"SenderType"+producerNumber,"Receiver"+i,"ReceiverType"+i, 50.0);
+            msg = dataGenerator.generateOne();
+            producer.send(new ProducerRecord<String, Transaction>(topic, msg.getSenderId(), msg), new Callback() {
                 public void onCompletion(RecordMetadata metadata, Exception e) {
                     if (e != null) {
                         e.printStackTrace();
