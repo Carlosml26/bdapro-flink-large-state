@@ -17,6 +17,19 @@ public class Transaction {
 //	Double transactionBonus;
 
 
+	public Transaction() {
+	}
+
+	public Transaction(Long transactionTime, String transactionId, String senderId, String senderType, String receiverId, String receiverType, Double transactionAmount) {
+		this.transactionTime = transactionTime;
+		this.transactionId = transactionId;
+		this.senderId = senderId;
+		this.senderType = senderType;
+		this.receiverId = receiverId;
+		this.receiverType = receiverType;
+		this.transactionAmount = transactionAmount;
+	}
+
 	public Long getTransactionTime() {
 		return transactionTime;
 	}

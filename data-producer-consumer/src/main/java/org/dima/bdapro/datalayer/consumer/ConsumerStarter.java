@@ -1,5 +1,7 @@
 package org.dima.bdapro.datalayer.consumer;
 
+import org.dima.bdapro.datalayer.producer.ProducerThread;
+
 public final class ConsumerStarter {
 
     public static void main(String[] args) {
@@ -16,6 +18,12 @@ public final class ConsumerStarter {
             topic = args[2];
             numberOfConsumer = Integer.parseInt(args[3]);
         }
+
+        // Start Notification Producer Thread
+        ProducerThread producerThread = new ProducerThread(brokers, topic);
+        Thread t1 = new Thread(producerThread);
+        t1.start();
+
 
         // Start group of Notification Consumers
         ConsumerGroup consumerGroup =
