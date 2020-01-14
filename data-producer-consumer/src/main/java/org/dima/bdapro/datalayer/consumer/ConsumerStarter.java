@@ -19,11 +19,6 @@ public final class ConsumerStarter {
             numberOfConsumer = Integer.parseInt(args[3]);
         }
 
-        // Start Notification Producer Thread
-        ProducerThread producerThread = new ProducerThread(brokers, topic);
-        Thread t1 = new Thread(producerThread);
-        t1.start();
-
 
         // Start group of Notification Consumers
         ConsumerGroup consumerGroup =
