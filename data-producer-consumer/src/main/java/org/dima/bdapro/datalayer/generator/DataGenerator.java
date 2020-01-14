@@ -3,12 +3,11 @@ package org.dima.bdapro.datalayer.generator;
 import org.dima.bdapro.datalayer.bean.Transaction;
 
 import java.io.IOException;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class DataGenerator {
 
-	private static final String TRANSACTION_ID_FORMAT = "%d-%05d";
+	private static final String TRANSACTION_ID_FORMAT = "%s.%d.%05d";
 
 
 	private String threadId;
@@ -62,7 +61,7 @@ public class DataGenerator {
 
 	private void genTransactionId(Transaction transaction, Long timestamp) {
 
-		String id = String.format(TRANSACTION_ID_FORMAT, timestamp, ++transactionCounter);
+		String id = String.format(TRANSACTION_ID_FORMAT, threadId, timestamp, ++transactionCounter);
 
 		if (transactionCounter >= Integer.MAX_VALUE - 1) {
 			transactionCounter = 0;

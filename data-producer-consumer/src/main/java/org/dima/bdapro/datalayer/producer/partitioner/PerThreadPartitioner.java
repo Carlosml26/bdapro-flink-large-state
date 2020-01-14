@@ -8,7 +8,7 @@ import java.util.Map;
 public class PerThreadPartitioner implements Partitioner {
 	@Override
 	public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, Cluster cluster) {
-		return 0;
+		return ((int) key) % cluster.partitionCountForTopic(topic);
 	}
 
 	@Override
