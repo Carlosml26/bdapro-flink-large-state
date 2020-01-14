@@ -25,7 +25,7 @@ public class ProducerThread implements Runnable {
         this.producer = new KafkaProducer<String, Transaction>(prop, new StringSerializer(), new TransactionSerializer());
         this.topic = topic;
         this.producerNumber = producerNumber;
-        this.dataGenerator = new DataGenerator(Thread.currentThread().getName());
+        this.dataGenerator = new DataGenerator(String.valueOf(producerNumber));
     }
 
     private static Properties createProducerConfig(String brokers, String groupId) {
@@ -39,17 +39,18 @@ public class ProducerThread implements Runnable {
         props.put("buffer.memory", 33554432);
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.dima.bdapro.datalayer.bean.json.TransactionSerializer");
+//        props.put("partitioner.class","org.dima.bdapro.datalayer.producer.partitioner.PerThreadPartitioner");
         return props;
     }
 
     @Override
     public void run() {
-        System.out.println("Produces 3 messages");
+        System.out.println("Produces 5 messages");
         for (int i = 0; i < 5; i++) {
             Transaction msg;
 //            msg = new Transaction(null,"Transaction"+i,"Sender"+producerNumber,"SenderType"+producerNumber,"Receiver"+i,"ReceiverType"+i, 50.0);
             msg = dataGenerator.generateOne();
-            producer.send(new ProducerRecord<String, Transaction>(topic, msg.getSenderId(), msg), new Callback() {
+            producer.send(new ProducerRecord<String, Transaction>(topic, String.valueOf(producerNumber), msg), new Callback() {
                 public void onCompletion(RecordMetadata metadata, Exception e) {
                     if (e != null) {
                         e.printStackTrace();
