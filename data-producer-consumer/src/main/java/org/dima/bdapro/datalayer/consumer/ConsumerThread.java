@@ -6,7 +6,9 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.dima.bdapro.datalayer.bean.Transaction;
 import org.dima.bdapro.datalayer.bean.json.TransactionDeserializer;
+import org.dima.bdapro.utils.PropertiesHandler;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Properties;
 
@@ -16,24 +18,11 @@ public class ConsumerThread implements Runnable {
     private final KafkaConsumer<String, Transaction> consumer;
     private final String topic;
 
-    public ConsumerThread(String brokers, String groupId, String topic) {
-        Properties prop = createConsumerConfig(brokers, groupId);
+    public ConsumerThread(String topic) throws IOException {
+        Properties prop = PropertiesHandler.getInstance().getModuleProperties();
         this.consumer = new KafkaConsumer<String, Transaction>(prop,new StringDeserializer (), new TransactionDeserializer<Transaction>(Transaction.class));
         this.topic = topic;
         this.consumer.subscribe(Arrays.asList(this.topic));
-    }
-
-    private static Properties createConsumerConfig(String brokers, String groupId) {
-        Properties props = new Properties();
-        props.put("bootstrap.servers", brokers);
-        props.put("group.id", groupId);
-        props.put("enable.auto.commit", "true");
-        props.put("auto.commit.interval.ms", "1000");
-        props.put("session.timeout.ms", "30000");
-        props.put("auto.offset.reset", "earliest");
-        props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        return props;
     }
 
     @Override

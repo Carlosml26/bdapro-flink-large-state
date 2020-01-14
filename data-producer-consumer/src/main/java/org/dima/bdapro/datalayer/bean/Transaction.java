@@ -1,6 +1,8 @@
 package org.dima.bdapro.datalayer.bean;
 
-public class Transaction {
+import java.io.Serializable;
+
+public class Transaction implements Serializable {
 	Long transactionTime;
 	String transactionId;
 
