@@ -5,6 +5,8 @@ import org.dima.bdapro.datalayer.bean.Transaction;
 import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static org.dima.bdapro.utils.Constants.RESELLER_TRANSACTION_PROFILE;
+
 public class DataGenerator {
 
 	private static final String TRANSACTION_ID_FORMAT = "%s.%d.%05d";
@@ -23,16 +25,18 @@ public class DataGenerator {
 
 	}
 
-	public Transaction generateOne() {
+	public Transaction generateResellerTransaction() {
 		Transaction transaction = new Transaction();
 
 		genSenderData(transaction);
 		genRecevierData(transaction);
 
 		genTransactionAmount(transaction);
-		Long timestamp = System.nanoTime();
+		Long timestamp = System.currentTimeMillis();
 		transaction.setTransactionTime(timestamp); // TODO: Generate future data as well?
 		genTransactionId(transaction, timestamp);
+
+		transaction.setProfileId(RESELLER_TRANSACTION_PROFILE);
 
 		return transaction;
 	}

@@ -3,18 +3,18 @@ package org.dima.bdapro.datalayer.bean;
 import java.io.Serializable;
 
 public class Transaction implements Serializable {
-	Long transactionTime;
-	String transactionId;
+	private Long transactionTime;
+	private String transactionId;
 
-	String senderId;
-	String senderType;
+	private String senderId;
+	private String senderType;
 
-	String receiverId;
-	String receiverType;
+	private String receiverId;
+	private String receiverType;
 
-//	String profileId;
+	private String profileId;
 
-	Double transactionAmount;
+	private Double transactionAmount;
 //	Double transactionFee;
 //	Double transactionBonus;
 
@@ -88,4 +88,13 @@ public class Transaction implements Serializable {
 	public void setTransactionAmount(Double transactionAmount) {
 		this.transactionAmount = transactionAmount;
 	}
+
+	public String getProfileId() {
+		return profileId;
+	}
+
+	public void setProfileId(String profileId) {
+		this.profileId = profileId;
+	}
+
 }

@@ -76,6 +76,11 @@ under the License.
 			<version>${flink.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.dima.bdapro</groupId>
+			<artifactId>kafka-multithreaded-producer-consumer</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
 		<!-- Add logging framework, to produce console output when running in the IDE. -->
 		<!-- These dependencies are excluded from the application JAR by default. -->
 		<dependency>

@@ -12,6 +12,7 @@ import org.dima.bdapro.utils.PropertiesHandler;
 
 import java.io.IOException;
 import java.util.Properties;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class ProducerThread implements Runnable {
 
@@ -36,7 +37,7 @@ public class ProducerThread implements Runnable {
 		for (int i = 0; i < n_messages; i++) {
 			Transaction msg;
 //            msg = new Transaction(null,"Transaction"+i,"Sender"+producerNumber,"SenderType"+producerNumber,"Receiver"+i,"ReceiverType"+i, 50.0);
-			msg = dataGenerator.generateOne();
+			msg = dataGenerator.generateResellerTransaction();
 			producer.send(new ProducerRecord<Integer, Transaction>(topic, producerNumber, msg), new Callback() {
 				public void onCompletion(RecordMetadata metadata, Exception e) {
 					if (e != null) {
@@ -48,6 +49,13 @@ public class ProducerThread implements Runnable {
 							+ metadata.offset());
 				}
 			});
+
+			try {
+				Thread.sleep(ThreadLocalRandom.current().nextLong(1, 100));
+			}
+			catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 
 		}
 		// closes producer
