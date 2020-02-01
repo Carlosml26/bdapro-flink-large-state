@@ -5,15 +5,17 @@ import org.apache.kafka.common.serialization.Deserializer;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.io.Serializable;
 import java.util.Map;
 
-public class TransactionDeserializer <T> implements Deserializer {
+public class TransactionDeserializer <T> implements Deserializer, Serializable {
 
     private Logger logger = LogManager.getLogger(this.getClass());
 
     private Class <T> type;
 
-    public TransactionDeserializer(Class type) {
+    public TransactionDeserializer(Class<T> type) {
         this.type = type;
     }
 
