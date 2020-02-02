@@ -47,7 +47,7 @@ public class DataGenerator {
 		Transaction transaction = new Transaction();
 
 		genSenderDataOfType(transaction, resellers.getTypesSize() - 2); // 2nd last is retail
-		genReceiverDataOfType(transaction, resellers.getTypesSize() - 1);
+		genReceiverDataOfType(transaction, resellers.getTypesSize() - 1); // last is subscriber
 
 		genTransactionAmount(transaction);
 		Long timestamp = System.currentTimeMillis();
@@ -66,7 +66,7 @@ public class DataGenerator {
 	public Transaction generateCallTransaction() {
 		Transaction transaction = new Transaction();
 
-		genSenderDataOfType(transaction, resellers.getTypesSize() - 1); // 2nd last is retail
+		genSenderDataOfType(transaction, resellers.getTypesSize() - 1); // last is subscriber
 		genReceiverDataOfType(transaction, 0); // top-level reseller.
 
 		genTransactionAmount(transaction);
