@@ -34,10 +34,17 @@ public class ProducerThread implements Runnable {
 	@Override
 	public void run() {
 		int n_messages = Integer.parseInt(props.getProperty("n_messages_per_producer", "0"));
+		int p_credit = Integer.parseInt(props.getProperty("datagenerator.transaction.p_credit", "1"));
+		int p_topup = Integer.parseInt(props.getProperty("datagenerator.transaction.p_topup", "1"));
+		int p_call = Integer.parseInt(props.getProperty("datagenerator.transaction.p_call", "1"));
+
+
 		for (int i = 0; i < n_messages; i++) {
 			Transaction msg;
 //            msg = new Transaction(null,"Transaction"+i,"Sender"+producerNumber,"SenderType"+producerNumber,"Receiver"+i,"ReceiverType"+i, 50.0);
-			msg = dataGenerator.generateResellerTransaction();
+			msg = dataGenerator.genTransaction(i, p_credit, p_topup, p_call);
+
+
 			producer.send(new ProducerRecord<Integer, Transaction>(topic, producerNumber, msg), new Callback() {
 				public void onCompletion(RecordMetadata metadata, Exception e) {
 					if (e != null) {
@@ -50,7 +57,7 @@ public class ProducerThread implements Runnable {
 				}
 			});
 
-			try {
+			try {//- [TODO]: Remove it for experimentation.
 				Thread.sleep(ThreadLocalRandom.current().nextLong(1, 100));
 			}
 			catch (InterruptedException e) {

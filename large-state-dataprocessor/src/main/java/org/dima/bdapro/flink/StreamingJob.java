@@ -22,17 +22,33 @@ import org.dima.bdapro.utils.PropertiesHandler;
 import java.util.Properties;
 
 import static org.dima.bdapro.utils.Constants.RESELLER_TRANSACTION_PROFILE;
+import static org.dima.bdapro.utils.Constants.SUBSCRIBER_TRANSACTION_PROFILE;
+import static org.dima.bdapro.utils.Constants.TOPUP_PROFILE;
 
 public class StreamingJob {
+
+	private static StreamExecutionEnvironment STREAM_EXECUTION_ENVIRONMENT;
 
 	public static void main(String[] args) throws Exception {
 		Properties props = PropertiesHandler.getInstance(args != null && args.length > 1 ? args[0] : "src/main/conf/flink-processor.properties").getModuleProperties();
 
+		DataStream<Transaction> trasactionStream = initConsumer(props);
+		calculateResellerUsageStatistics(trasactionStream, props);
+		calculateRewardedSubscribers(trasactionStream, props);
+
+
+		// execute program
+		STREAM_EXECUTION_ENVIRONMENT.execute("Flink Streaming Java API Skeleton");
+	}
+
+
+	private static DataStream<Transaction> initConsumer(Properties props) {
+
 		// set up the streaming execution environment
-		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-		env.enableCheckpointing(Long.parseLong(props.getProperty("flink.checkpointing.delay")), CheckpointingMode.EXACTLY_ONCE);
-		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-		env.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism")));
+		STREAM_EXECUTION_ENVIRONMENT = StreamExecutionEnvironment.getExecutionEnvironment();
+		STREAM_EXECUTION_ENVIRONMENT.enableCheckpointing(Long.parseLong(props.getProperty("flink.checkpointing.delay")), CheckpointingMode.EXACTLY_ONCE);
+		STREAM_EXECUTION_ENVIRONMENT.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+		STREAM_EXECUTION_ENVIRONMENT.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism")));
 
 
 		FlinkKafkaConsumer<Transaction> consumer = new FlinkKafkaConsumer<Transaction>(
@@ -56,9 +72,13 @@ public class StreamingJob {
 			consumer.setStartFromLatest();
 		}
 
-		DataStream<Transaction> trasactionStream = env.addSource(consumer);
+		return STREAM_EXECUTION_ENVIRONMENT.addSource(consumer);
+	}
+
+	private static void calculateResellerUsageStatistics(DataStream<Transaction> trasactionStream, Properties props) {
+
 		DataStream<Transaction> ct = trasactionStream
-				.filter(x -> x.getProfileId().equals(RESELLER_TRANSACTION_PROFILE));
+				.filter(x -> x.getProfileId().equals(RESELLER_TRANSACTION_PROFILE) || x.getProfileId().equals(TOPUP_PROFILE));
 
 //		ct.print();
 
@@ -75,9 +95,20 @@ public class StreamingJob {
 
 		aggPerResellerType.print("reseller_type");
 
+	}
 
-		// execute program
-		env.execute("Flink Streaming Java API Skeleton");
+	private static void calculateRewardedSubscribers(DataStream<Transaction> trasactionStream, Properties props) {
+
+		DataStream<Transaction> rts = trasactionStream
+				.filter(x -> x.getProfileId().equals(TOPUP_PROFILE));
+
+		DataStream<Transaction> sts = trasactionStream
+				.filter(x -> x.getProfileId().equals(SUBSCRIBER_TRANSACTION_PROFILE));
+
+		rts.print();
+		sts.print();
+
+		//[TODO] Join
 	}
 
 }
