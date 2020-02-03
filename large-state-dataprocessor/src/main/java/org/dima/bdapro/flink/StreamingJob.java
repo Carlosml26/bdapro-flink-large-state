@@ -1,11 +1,14 @@
 package org.dima.bdapro.flink;
 
+import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.co.ProcessJoinFunction;
 import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.windowing.time.Time;
@@ -30,7 +33,7 @@ public class StreamingJob {
 	private static StreamExecutionEnvironment STREAM_EXECUTION_ENVIRONMENT;
 
 	public static void main(String[] args) throws Exception {
-		Properties props = PropertiesHandler.getInstance(args != null && args.length > 1 ? args[0] : "src/main/conf/flink-processor.properties").getModuleProperties();
+		Properties props = PropertiesHandler.getInstance(args != null && args.length > 1 ? args[0] : "../large-state-dataprocessor/src/main/conf/flink-processor.properties").getModuleProperties();
 
 		DataStream<Transaction> trasactionStream = initConsumer(props);
 		calculateResellerUsageStatistics(trasactionStream, props);
@@ -51,7 +54,7 @@ public class StreamingJob {
 		STREAM_EXECUTION_ENVIRONMENT.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism")));
 
 
-		FlinkKafkaConsumer<Transaction> consumer = new FlinkKafkaConsumer<Transaction>(
+		FlinkKafkaConsumer<Transaction> consumer = new FlinkKafkaConsumer<>(
 				props.getProperty("topic"),
 				new TransactionDeserializationSchema(),
 				props
@@ -108,7 +111,17 @@ public class StreamingJob {
 		rts.print();
 		sts.print();
 
-		//[TODO] Join
+
+		DataStream<String> names = rts.keyBy(Transaction::getReceiverId)
+				.intervalJoin(sts.keyBy(Transaction::getSenderId))
+				.between(Time.milliseconds(0), Time.minutes(Integer.parseInt(props.getProperty("flink.query.join_per_subcriberid.time_interval_join_size_minutes"))))
+				.process(new JoinWindowFunction ())
+				.keyBy(0)
+				.reduce(new ReduceTransactionFunction())
+				.filter( t -> t.f3 >= 0.4*t.f1)
+				.map(t -> t.f2);
+
+		names.print("Subcriber_id");
 	}
 
 }
@@ -129,5 +142,20 @@ class MedianWindowFunction implements WindowFunction<Transaction, Tuple3<String,
 
 		out.collect(new Tuple3<>(s, medianCalculator.median().getTransactionAmount(), medianCalculator.count()));
 
+	}
+}
+
+
+class JoinWindowFunction extends ProcessJoinFunction<Transaction, Transaction, Tuple4<String,Double, String,Double>> {
+	@Override
+	public void processElement(Transaction rts, Transaction sts, Context context, Collector<Tuple4<String,Double,String, Double>> collector)  {
+		collector.collect(new Tuple4<>(rts.getTransactionId(),rts.getTransactionAmount(),sts.getSenderId(), sts.getTransactionAmount()));
+	}
+}
+
+class ReduceTransactionFunction implements ReduceFunction<Tuple4<String, Double, String, Double>>{
+	@Override
+	public Tuple4<String, Double, String, Double> reduce(Tuple4<String, Double, String, Double> t0, Tuple4<String, Double, String, Double> t1)  {
+		return new Tuple4<>(t0.f0,t0.f1,t1.f2, t0.f3+t1.f3);
 	}
 }
