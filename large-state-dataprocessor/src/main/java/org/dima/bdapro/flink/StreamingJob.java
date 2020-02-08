@@ -36,7 +36,7 @@ public class StreamingJob {
 		Properties props = PropertiesHandler.getInstance(args != null && args.length > 1 ? args[0] : "../large-state-dataprocessor/src/main/conf/flink-processor.properties").getModuleProperties();
 
 		DataStream<Transaction> trasactionStream = initConsumer(props);
-		calculateResellerUsageStatistics(trasactionStream, props);
+//		calculateResellerUsageStatistics(trasactionStream, props);
 		calculateRewardedSubscribers(trasactionStream, props);
 
 
@@ -108,13 +108,10 @@ public class StreamingJob {
 		DataStream<Transaction> sts = trasactionStream
 				.filter(x -> x.getProfileId().equals(SUBSCRIBER_TRANSACTION_PROFILE));
 
-		rts.print();
-		sts.print();
-
 
 		DataStream<String> names = rts.keyBy(Transaction::getReceiverId)
 				.intervalJoin(sts.keyBy(Transaction::getSenderId))
-				.between(Time.milliseconds(0), Time.minutes(Integer.parseInt(props.getProperty("flink.query.join_per_subcriberid.time_interval_join_size_minutes"))))
+				.between(Time.milliseconds(0), Time.seconds(Integer.parseInt(props.getProperty("flink.query.join_per_subcriberid.time_interval_join_size_seconds"))))
 				.process(new JoinWindowFunction ())
 				.keyBy(0)
 				.reduce(new ReduceTransactionFunction())
@@ -149,9 +146,11 @@ class MedianWindowFunction implements WindowFunction<Transaction, Tuple3<String,
 class JoinWindowFunction extends ProcessJoinFunction<Transaction, Transaction, Tuple4<String,Double, String,Double>> {
 	@Override
 	public void processElement(Transaction rts, Transaction sts, Context context, Collector<Tuple4<String,Double,String, Double>> collector)  {
-		collector.collect(new Tuple4<>(rts.getTransactionId(),rts.getTransactionAmount(),sts.getSenderId(), sts.getTransactionAmount()));
+		if (sts.getTransactionAmount() >= 0.4*rts.getTransactionAmount())
+			collector.collect(new Tuple4<>(rts.getTransactionId(),rts.getTransactionAmount(),sts.getSenderId(), sts.getTransactionAmount()));
 	}
 }
+
 
 class ReduceTransactionFunction implements ReduceFunction<Tuple4<String, Double, String, Double>>{
 	@Override
