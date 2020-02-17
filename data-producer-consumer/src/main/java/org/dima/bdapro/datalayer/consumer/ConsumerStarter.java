@@ -11,10 +11,9 @@ public final class ConsumerStarter {
 
         PropertiesHandler.getInstance(args != null && args.length > 1 ? args[0] : "src/main/conf/configuration.properties");
 
-
         // Start group of Notification Consumers
         ConsumerGroup consumerGroup =
-                new ConsumerGroup();
+                new ConsumerGroup(null);
 
         consumerGroup.execute();
 
