@@ -20,8 +20,7 @@ public final class ConsumerGroup {
 
 		consumers = new ArrayList<>();
 		for (int i = 0; i < this.numberOfConsumers; i++) {
-			ConsumerThread ncThread =
-					new ConsumerThread(this.topic);
+			ConsumerThread ncThread = new ConsumerThread(this.topic);
 			consumers.add(ncThread);
 		}
 	}

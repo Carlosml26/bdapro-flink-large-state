@@ -13,8 +13,7 @@ public final class ConsumerStarter {
 
 
         // Start group of Notification Consumers
-        ConsumerGroup consumerGroup =
-                new ConsumerGroup();
+        ConsumerGroup consumerGroup = new ConsumerGroup();
 
         consumerGroup.execute();
 
