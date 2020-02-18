@@ -46,10 +46,12 @@ public class ConsumerThread implements Runnable {
 	class TransactionComparator implements Comparator<Transaction> {
 		@Override
 		public int compare(Transaction t1, Transaction t2) {
-			if (t1.getTransactionAmount() < t2.getTransactionAmount())
+			if (t1.getTransactionAmount() < t2.getTransactionAmount()) {
 				return 1;
-			if (t1.getTransactionAmount() > t2.getTransactionAmount())
+			}
+			if (t1.getTransactionAmount() > t2.getTransactionAmount()) {
 				return -1;
+			}
 			return 0;
 		}
 	}
@@ -62,21 +64,23 @@ public class ConsumerThread implements Runnable {
 	public void run() {
 		try {
 
+			Long currentTime;
+			Long windowsSize = 20000L; // Long.parseLong(props.getProperty("java.query.agg_per_ressellerId.time_window_size_ms"));
+			Long windowsStart = 0L;
+			Long windowEnd = windowsStart + windowsSize;
+
 			while (true) {
-				ConsumerRecords<String, Transaction> records = consumer.poll(Duration.ofMillis(100));
+				ConsumerRecords<String, Transaction> records = consumer.poll(Duration.ofMillis(200));
 
-				Long currentTime;
-				Long closingTime = 0L;
-				Long windowsTime = 2000L; // Long.parseLong(props.getProperty("java.query.agg_per_ressellerId.time_window_size_ms"));
-
+				int zzz = 0;
 				for (ConsumerRecord<String, Transaction> record : records) {
 
 					Transaction transaction = record.value();
 					String transactionSenderId = transaction.getSenderId();
 					String transactionSenderType = transaction.getSenderType();
-					currentTime = transaction.getTransactionTime();
+					currentTime = transaction.getTransactionTime() - 1;
 
-					if (currentTime > closingTime) {
+					if (currentTime > windowEnd) {
 
 						synchronized (lock) {
 							numberProducers.decrementAndGet();
@@ -90,18 +94,21 @@ public class ConsumerThread implements Runnable {
 								}
 								transactionHasMap = new ConcurrentHashMap<>();
 								numberProducers.set(maxNumberProducers);
-								System.out.println("WakeUpALL!");
+								System.out.println(Thread.currentThread().getName() + ": WakeUpALL!");
 
 								lock.notifyAll();
 							}
 
-							while (numberProducers.get() < maxNumberProducers){
-								System.out.println("thread sleeping");
-								lock.wait();
-							}
+//							while (numberProducers.get() >= 0) {
+								System.out.println(Thread.currentThread().getName() + ": sleeping");
+								lock.wait(windowsSize); // TODO: All threads go to sleep, somehow.
+//							}
 						}
 
-						closingTime = currentTime + windowsTime;
+						long x = windowEnd;
+						windowEnd = windowsStart == 0 ? currentTime + windowsSize : windowsStart + windowsSize;
+						windowsStart = windowsStart == 0 ? currentTime : x;
+
 					}
 
 					if (transaction.getProfileId().equals(RESELLER_TRANSACTION_PROFILE) || transaction.getProfileId().equals(TOPUP_PROFILE)) {
@@ -111,23 +118,25 @@ public class ConsumerThread implements Runnable {
 							PriorityBlockingQueue<Transaction> transactions = new PriorityBlockingQueue<>(100, new TransactionComparator());
 							transactions.add(transaction);
 							transactionHasMap.put(transactionSenderId, transactions);
-							System.out.println("New queue created  " + transactionSenderId + " and transaction " + transaction.getTransactionId() + " introduced");
-						} else {
-							System.out.println("Transaction " + transaction.getTransactionId() + " in the queue " + transactionSenderId);
+//							System.out.println("New queue created  " + transactionSenderId + " and transaction " + transaction.getTransactionId() + " introduced");
+						}
+						else {
+//							System.out.println("Transaction " + transaction.getTransactionId() + " in the queue " + transactionSenderId);
 							transactionQueue.add(transaction);
 						}
 					}
 				}
 			}
 
-		}catch(InterruptedException e){
+		}
+		catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 
 	}
 
 
-	private Transaction getMediandTransaction (PriorityBlockingQueue < Transaction > transactionsQueue) {
+	private Transaction getMediandTransaction(PriorityBlockingQueue<Transaction> transactionsQueue) {
 		return null;
 	}
 }
