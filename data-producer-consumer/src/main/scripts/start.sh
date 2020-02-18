@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-cd /home/danish/FastWorkspace/BDMA/TUB/BDAPRO/Project/bdapro-flink-large-state/data-producer-consumer/src/main/scripts
+# cd to scripts folder.
+export KAFKA_HOME="/usr/local/kafka/"
+
 bash start-zookeeper.sh &
 sleep 5
 bash start-kafka.sh &
