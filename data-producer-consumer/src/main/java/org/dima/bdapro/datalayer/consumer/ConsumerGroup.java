@@ -40,5 +40,4 @@ public final class ConsumerGroup {
             t.start();
         }
     }
-
 }

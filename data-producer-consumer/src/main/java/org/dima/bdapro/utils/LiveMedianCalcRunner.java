@@ -1,6 +1,6 @@
 package org.dima.bdapro.utils;
 
-import com.sun.istack.internal.NotNull;
+//import com.sun.istack.internal.NotNull;
 import org.dima.bdapro.datalayer.bean.Transaction;
 
 import java.util.stream.Stream;
@@ -51,7 +51,7 @@ class MyData implements Comparable<MyData> {
 		this.a = a;
 	}
 
-	@NotNull
+//	@NotNull
 	@Override
 	public int compareTo(MyData o) {
 		return x != null ? x.compareTo(o.x) : -1;
