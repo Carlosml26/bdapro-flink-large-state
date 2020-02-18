@@ -79,11 +79,11 @@ public class ResellerUsageStatistics extends AbstractReport {
 					continue;
 				}
 
+				timestamp = System.currentTimeMillis();
+
 				outputFileWriter.append(String.format(outputFormat, entry.getKey(), wrapper.getEventTime(), wrapper.getT().getTransactionAmount()));
 				outputFileWriter.newLine();
 
-
-				timestamp = System.currentTimeMillis();
 				statsFileWrtier.append(getStatsOutput(wrapper, timestamp));
 				statsFileWrtier.newLine();
 			}

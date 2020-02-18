@@ -106,13 +106,14 @@ public class RewardedSubscribers extends AbstractReport {
 					}
 				}
 
+				timestamp = System.currentTimeMillis();
+
 				//logic
 				if (isRewardedSubscriber(entry.getKey(), entry.getValue())) {
 					outputFileWriter.append(String.format(outputFormat, entry.getKey(), maxEventTime));
 					outputFileWriter.newLine();
 				}
 
-				timestamp = System.currentTimeMillis();
 				statsFileWrtier.append(getStatsOutput(maxEventTime, maxProcTime, timestamp));
 				statsFileWrtier.newLine();
 			}

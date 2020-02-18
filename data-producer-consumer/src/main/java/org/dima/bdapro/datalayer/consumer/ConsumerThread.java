@@ -66,12 +66,12 @@ public class ConsumerThread implements Runnable {
 								processReports();
 
 								numberProducers.set(maxNumberProducers);
-								System.out.println(Thread.currentThread().getName() + ": WakeUpALL!");
+//								System.out.println(Thread.currentThread().getName() + ": WakeUpALL!");
 
 								lock.notifyAll();
 							}
 							else {
-								System.out.println(Thread.currentThread().getName() + ": sleeping");
+//								System.out.println(Thread.currentThread().getName() + ": sleeping");
 								lock.wait(windowsSize); // TODO: All threads go to sleep, somehow.
 							}
 						}
