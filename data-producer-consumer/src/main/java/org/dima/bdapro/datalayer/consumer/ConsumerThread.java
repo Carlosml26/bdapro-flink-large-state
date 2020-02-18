@@ -15,8 +15,6 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -30,7 +28,7 @@ public class ConsumerThread implements Runnable {
 	private final int maxNumberProducers;
 	private AtomicInteger numberProducers;
 
-	public ConsumerThread(ConcurrentHashMap<String, PriorityBlockingQueue<Transaction>> transactionHasMap, Properties props, Object lock, AtomicInteger numberProducers, List<Report> reports) throws IOException {
+	public ConsumerThread(Properties props, Object lock, AtomicInteger numberProducers, List<Report> reports) throws IOException {
 		consumer = new KafkaConsumer<String, Transaction>(props, new StringDeserializer(), new TransactionDeserializer<Transaction>(Transaction.class));
 		topic = props.getProperty("topic");
 		this.props = props;
@@ -46,12 +44,12 @@ public class ConsumerThread implements Runnable {
 		try {
 
 			Long currentTime;
-			Long windowsSize = 20000L; // Long.parseLong(props.getProperty("java.query.agg_per_ressellerId.time_window_size_ms"));
+			Long windowsSize = Long.parseLong(props.getProperty("dataconsumer.query.time_window_size_ms"));
 			Long windowsStart = 0L;
 			Long windowEnd = windowsStart + windowsSize;
 
 			while (true) {
-				ConsumerRecords<String, Transaction> records = consumer.poll(Duration.ofMillis(200));
+				ConsumerRecords<String, Transaction> records = consumer.poll(Duration.ofMillis(Long.parseLong(props.getProperty("dataconsumer.kafka.polling-time"))));
 
 				for (ConsumerRecord<String, Transaction> record : records) {
 
