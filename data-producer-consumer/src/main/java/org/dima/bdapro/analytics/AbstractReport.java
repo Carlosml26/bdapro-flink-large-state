@@ -6,15 +6,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class AbstractReport implements Report {
-
-	protected AtomicLong avgEventLatency = new AtomicLong(0L);
-	protected AtomicLong avgProcessingLatency = new AtomicLong(0L);
-	protected AtomicInteger numberOfRecords = new AtomicInteger(0);
-
 
 	protected BufferedWriter outputFileWriter;
 	protected BufferedWriter statsFileWrtier;

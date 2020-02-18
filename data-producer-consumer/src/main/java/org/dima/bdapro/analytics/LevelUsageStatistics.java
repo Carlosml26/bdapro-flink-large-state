@@ -11,18 +11,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import static org.dima.bdapro.utils.Constants.RESELLER_TRANSACTION_PROFILE;
 import static org.dima.bdapro.utils.Constants.TOPUP_PROFILE;
 
-public class ResellerUsageStatistics extends AbstractReport {
+public class LevelUsageStatistics extends AbstractReport {
 
 	private ConcurrentHashMap<String, TransactionMedianCalculator> transactionMap = new ConcurrentHashMap<>();
 
-	private static ResellerUsageStatistics INSTANCE;
+	private static LevelUsageStatistics INSTANCE;
 
-	private ResellerUsageStatistics() {
+	private LevelUsageStatistics() {
 	}
 
 	public static Report getInstance() {
 		if (INSTANCE == null) {
-			INSTANCE = new ResellerUsageStatistics();
+			INSTANCE = new LevelUsageStatistics();
 		}
 		return INSTANCE;
 	}
@@ -38,18 +38,18 @@ public class ResellerUsageStatistics extends AbstractReport {
 
 		Transaction transaction = transactionW.getT();
 
-		String transactionSenderId = transaction.getSenderId();
+		String transactionSenderType = transaction.getSenderType();
 
 		if (transaction.getProfileId().equals(RESELLER_TRANSACTION_PROFILE) || transaction.getProfileId().equals(TOPUP_PROFILE)) {
 
-			TransactionMedianCalculator transactionQueue = transactionMap.get(transactionSenderId);
+			TransactionMedianCalculator transactionQueue = transactionMap.get(transactionSenderType);
 			if (transactionQueue == null) {
 				synchronized (transactionMap) {
-					transactionQueue = transactionMap.get(transactionSenderId);
+					transactionQueue = transactionMap.get(transactionSenderType);
 					if (transactionQueue == null) { // double locking to for thread-safe initialization.
 
 						transactionQueue = new TransactionMedianCalculator();
-						transactionMap.put(transactionSenderId, transactionQueue);
+						transactionMap.put(transactionSenderType, transactionQueue);
 					}
 				}
 			}
@@ -81,7 +81,6 @@ public class ResellerUsageStatistics extends AbstractReport {
 
 				outputFileWriter.append(String.format(outputFormat, entry.getKey(), wrapper.getEventTime(), wrapper.getT().getTransactionAmount()));
 				outputFileWriter.newLine();
-
 
 				timestamp = System.currentTimeMillis();
 				statsFileWrtier.append(getStatsOutput(wrapper, timestamp));
