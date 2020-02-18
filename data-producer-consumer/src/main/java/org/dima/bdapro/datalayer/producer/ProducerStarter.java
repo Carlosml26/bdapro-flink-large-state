@@ -8,8 +8,7 @@ public final class ProducerStarter {
 
 	public static void main(String[] args) throws IOException {
 
-
-		PropertiesHandler.getInstance(args != null && args.length > 1 ? args[0] : "data-producer-consumer/src/main/conf/configuration.properties");
+		PropertiesHandler.getInstance(args != null && args.length >= 1 ? args[0] : "data-producer-consumer/src/main/conf/configuration.properties");
 
 
 		ProducerGroup producerGroup = new ProducerGroup();
