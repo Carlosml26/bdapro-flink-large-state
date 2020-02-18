@@ -8,6 +8,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -29,7 +30,7 @@ import java.util.Properties;
 
 import static org.dima.bdapro.utils.Constants.RESELLER_TRANSACTION_PROFILE;
 
-public class StreamingJob {
+public class AggregationStreamingJob {
 
 	public static void main(String[] args) throws Exception {
 		Properties props = PropertiesHandler.getInstance(args != null && args.length > 1 ? args[0] : "large-state-dataprocessor/src/main/conf/flink-processor.properties").getModuleProperties();
@@ -73,24 +74,11 @@ public class StreamingJob {
 				.filter(x -> x.f0.getProfileId().equals(RESELLER_TRANSACTION_PROFILE));
 
 
-		DataStream<Tuple5<String, Double, Integer, Long, Long>> aggPerResellerId = ct.keyBy((KeySelector<Tuple2<Transaction, Long>, String>) x -> x.f0.getSenderId())
+		DataStream<Tuple5<String, Double, Integer, Long, Long>> aggPerResellerId = ct.keyBy((KeySelector<Tuple2<Transaction, Long>, String>) x -> (args[0].equals("id"))?x.f0.getSenderId():x.f0.getSenderType())
 				.timeWindow(Time.milliseconds(Integer.parseInt(props.getProperty("flink.query.agg_per_ressellerId.time_window_size_ms"))))
 				.apply(new MedianWindowFunction());
 
-		aggPerResellerId.keyBy(0).map(new LatencyMap()).print().setParallelism(1);
-		//aggPerResellerId.map(new LatencyMap()).writeAsCsv("latency_query_sender_id.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-
-		//aggPerResellerId.print("reseller_id");
-
-		/*DataStream<Tuple5<String, Double, Integer, Long, Long>> aggPerResellerType = ct.keyBy((KeySelector<Tuple2<Transaction, Long>, String>) x -> x.f0.getSenderType())
-				.timeWindow(Time.milliseconds(Integer.parseInt(props.getProperty("flink.query.agg_per_ressellerType.time_window_size_ms"))))
-				.apply(new MedianWindowFunction());
-		*/
-
-		//aggPerResellerType.map(new LatencyMap()).writeAsCsv("latency_query_sender_type.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-
-		//aggPerResellerType.print("reseller_type");
-
+		aggPerResellerId.keyBy(0).map(new LatencyMap()).writeAsCsv("latency_query_sender_" +args[0]+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");
@@ -129,6 +117,7 @@ class LatencyMap extends RichMapFunction<Tuple5<String, Double, Integer, Long, L
 		}
 		long eventLatency = System.currentTimeMillis()-x.f3;
 		long procLatency = System.currentTimeMillis()-x.f4;
+		//System.out.println(eventLatency);
 		avgEventLatency.update((avgEventLatency.value() * N.value() + eventLatency)/(N.value()+1));
 		avgProcessingLatency.update((avgProcessingLatency.value() * N.value() + procLatency)/(N.value()+1));
 		N.update(N.value()+1);
@@ -153,10 +142,10 @@ class MedianWindowFunction implements WindowFunction<Tuple2<Transaction, Long>, 
 		for (Tuple2<Transaction, Long> t : elements) {
 			medianCalculator.add(t.f0);
 
-			if (maxEventTime < t.f0.getTransactionTime())
+			if (maxEventTime < t.f0.getTransactionTime()){
 				maxEventTime = t.f0.getTransactionTime();
-			if (maxProcTime < t.f1)
 				maxProcTime = t.f1;
+			}
 		}
 
 		out.collect(new Tuple5<>("reseller", medianCalculator.median().getTransactionAmount(), medianCalculator.count(), maxEventTime, maxProcTime));

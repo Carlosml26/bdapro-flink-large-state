@@ -97,4 +97,17 @@ public class Transaction implements Serializable {
 		this.profileId = profileId;
 	}
 
+	@Override
+	public String toString() {
+		return "Transaction{" +
+				"transactionTime=" + transactionTime +
+				", transactionId='" + transactionId + '\'' +
+				", senderId='" + senderId + '\'' +
+				", senderType='" + senderType + '\'' +
+				", receiverId='" + receiverId + '\'' +
+				", receiverType='" + receiverType + '\'' +
+				", profileId='" + profileId + '\'' +
+				", transactionAmount=" + transactionAmount +
+				'}';
+	}
 }
