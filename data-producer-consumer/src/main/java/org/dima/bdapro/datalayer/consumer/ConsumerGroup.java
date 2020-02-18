@@ -1,7 +1,8 @@
 package org.dima.bdapro.datalayer.consumer;
 
 
-
+import org.dima.bdapro.analytics.Report;
+import org.dima.bdapro.analytics.ResellerUsageStatistics;
 import org.dima.bdapro.datalayer.bean.Transaction;
 import org.dima.bdapro.utils.PropertiesHandler;
 
@@ -28,8 +29,17 @@ public final class ConsumerGroup {
         this.topic = properties.getProperty("topic");
         consumers = new ArrayList<>();
 
+        List<Report> reports = new ArrayList<>(3);
+        reports.add(ResellerUsageStatistics.getInstance());
+//    ;    reports.add(LevelUsageStatistics.getInstance());
+//        reports.add(RewardedSubscribers.getInstance());
+        ;
+
+        ResellerUsageStatistics.getInstance().init("java-reseller-output.txt", "java-reseller-stats.txt");
+
+
         for (int i = 0; i < numberOfConsumers.get(); i++) {
-            ConsumerThread ncThread = new ConsumerThread(transactionMap,properties,lock, numberOfConsumers);
+            ConsumerThread ncThread = new ConsumerThread(transactionMap,properties,lock, numberOfConsumers, reports);
             consumers.add(ncThread);
         }
     }
