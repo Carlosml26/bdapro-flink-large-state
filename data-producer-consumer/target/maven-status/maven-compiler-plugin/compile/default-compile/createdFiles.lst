@@ -5,7 +5,6 @@ org/dima/bdapro/datalayer/bean/json/TransactionDeserializer.class
 org/dima/bdapro/utils/PropertiesHandler.class
 org/dima/bdapro/utils/Constants.class
 org/dima/bdapro/datalayer/bean/json/TransactionSerializer.class
-org/dima/bdapro/datalayer/consumer/ConsumerThread$TransactionComparator.class
 org/dima/bdapro/datalayer/consumer/ConsumerGroup.class
 org/dima/bdapro/datalayer/producer/ProducerThread$1.class
 org/dima/bdapro/utils/LiveMedianCalcRunner.class
