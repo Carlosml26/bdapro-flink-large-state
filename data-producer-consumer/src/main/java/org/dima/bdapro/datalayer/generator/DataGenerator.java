@@ -61,6 +61,7 @@ public class DataGenerator {
 
 	/**
 	 * Money goes back to the top level after the subscriber usage.
+	 *
 	 * @return
 	 */
 	public Transaction generateCallTransaction() {
@@ -122,16 +123,16 @@ public class DataGenerator {
 		int total = credit + topup + call;
 		int rem = seed % total;
 
-		if(rem >= 0 && rem < credit)
-		{
+		if (rem >= 0 && rem < credit) {
 			return generateCreditTransaction();
 		}
-		else if (rem >= credit && rem < credit + topup) {
+		else if (rem >= credit && rem < credit + topup && topup != 0) {
 			return generateTopupTransaction();
 		}
-		else {
+		else if (call != 0) {
 			return generateCallTransaction();
 		}
+		return null;
 	}
 
 
