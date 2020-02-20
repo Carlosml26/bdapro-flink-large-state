@@ -1,7 +1,16 @@
 package org.dima.bdapro.analytics;
 
-import org.dima.bdapro.datalayer.bean.Transaction;
+import org.dima.bdapro.datalayer.bean.TransactionWrapper;
+
+import java.io.IOException;
 
 public interface Report {
-	void processRecord(Transaction transaction);
+	void process(TransactionWrapper transaction);
+	void processRecord(TransactionWrapper transaction);
+	void materialize() throws IOException;
+	void outputResults() throws IOException;
+	void init(String outputFileName, String statsFileName) throws IOException;
+	void close() throws IOException;
 }
+
+

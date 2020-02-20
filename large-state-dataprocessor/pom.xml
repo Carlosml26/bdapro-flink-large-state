@@ -147,7 +147,7 @@ under the License.
 							</filters>
 							<transformers>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<mainClass>org.dima.bdapro.flink.StreamingJob</mainClass>
+									<mainClass>org.dima.bdapro.flink.JoinStreamJob</mainClass>
 								</transformer>
 							</transformers>
 						</configuration>

@@ -1,0 +1,3 @@
+/home/cmcuza/IdeaProjects/bdapro-flink-large-state/large-state-dataprocessor/src/main/java/org/dima/bdapro/flink/AggregationStreamingJob.java
+/home/cmcuza/IdeaProjects/bdapro-flink-large-state/large-state-dataprocessor/src/main/java/org/dima/bdapro/flink/JoinStreamJob.java
+/home/cmcuza/IdeaProjects/bdapro-flink-large-state/large-state-dataprocessor/src/main/java/org/dima/bdapro/flink/datalayer/json/TransactionDeserializationSchema.java

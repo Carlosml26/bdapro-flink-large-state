@@ -5,25 +5,22 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.dima.bdapro.analytics.Report;
 import org.dima.bdapro.datalayer.bean.Transaction;
+import org.dima.bdapro.datalayer.bean.TransactionWrapper;
 import org.dima.bdapro.datalayer.bean.json.TransactionDeserializer;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Comparator;
+import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.dima.bdapro.utils.Constants.RESELLER_TRANSACTION_PROFILE;
-import static org.dima.bdapro.utils.Constants.TOPUP_PROFILE;
 
 
 public class ConsumerThread implements Runnable {
 
-	private ConcurrentHashMap<String, PriorityBlockingQueue<Transaction>> transactionHasMap;
+	private final List<Report> reports;
 	private KafkaConsumer<String, Transaction> consumer;
 	private String topic;
 	private Properties props;
@@ -31,33 +28,15 @@ public class ConsumerThread implements Runnable {
 	private final int maxNumberProducers;
 	private AtomicInteger numberProducers;
 
-	public ConsumerThread(ConcurrentHashMap<String, PriorityBlockingQueue<Transaction>> transactionHasMap, Properties props, Object lock, AtomicInteger numberProducers) throws IOException {
+	public ConsumerThread(Properties props, Object lock, AtomicInteger numberProducers, List<Report> reports) throws IOException {
 		consumer = new KafkaConsumer<String, Transaction>(props, new StringDeserializer(), new TransactionDeserializer<Transaction>(Transaction.class));
 		topic = props.getProperty("topic");
 		this.props = props;
 		consumer.subscribe(Arrays.asList(topic));
-		this.transactionHasMap = transactionHasMap;
 		this.lock = lock;
 		this.numberProducers = numberProducers;
 		maxNumberProducers = Integer.parseInt(props.getProperty("n_consumers"));
-	}
-
-
-	class TransactionComparator implements Comparator<Transaction> {
-		@Override
-		public int compare(Transaction t1, Transaction t2) {
-			if (t1.getTransactionAmount() < t2.getTransactionAmount()) {
-				return 1;
-			}
-			if (t1.getTransactionAmount() > t2.getTransactionAmount()) {
-				return -1;
-			}
-			return 0;
-		}
-	}
-
-	public void outPut() {
-
+		this.reports = reports;
 	}
 
 	@Override
@@ -65,20 +44,18 @@ public class ConsumerThread implements Runnable {
 		try {
 
 			Long currentTime;
-			Long windowsSize = 20000L; // Long.parseLong(props.getProperty("java.query.agg_per_ressellerId.time_window_size_ms"));
+			Long windowsSize = Long.parseLong(props.getProperty("dataconsumer.query.time_window_size_ms"));
 			Long windowsStart = 0L;
 			Long windowEnd = windowsStart + windowsSize;
 
 			while (true) {
-				ConsumerRecords<String, Transaction> records = consumer.poll(Duration.ofMillis(200));
+				ConsumerRecords<String, Transaction> records = consumer.poll(Duration.ofMillis(Long.parseLong(props.getProperty("dataconsumer.kafka.polling-time"))));
 
-				int zzz = 0;
 				for (ConsumerRecord<String, Transaction> record : records) {
 
 					Transaction transaction = record.value();
-					String transactionSenderId = transaction.getSenderId();
-					String transactionSenderType = transaction.getSenderType();
 					currentTime = transaction.getTransactionTime() - 1;
+					long ingestionTime = System.currentTimeMillis();
 
 					if (currentTime > windowEnd) {
 
@@ -86,23 +63,17 @@ public class ConsumerThread implements Runnable {
 							numberProducers.decrementAndGet();
 							if (numberProducers.get() == 0) {
 
+								processReports();
 
-								for (PriorityBlockingQueue<Transaction> transactionsQueue : transactionHasMap.values()) {
-									Transaction t = getMediandTransaction(transactionsQueue);
-									outPut(); //TODO
-									transactionsQueue = null;
-								}
-								transactionHasMap = new ConcurrentHashMap<>();
 								numberProducers.set(maxNumberProducers);
-								System.out.println(Thread.currentThread().getName() + ": WakeUpALL!");
+//								System.out.println(Thread.currentThread().getName() + ": WakeUpALL!");
 
 								lock.notifyAll();
 							}
-
-//							while (numberProducers.get() >= 0) {
-								System.out.println(Thread.currentThread().getName() + ": sleeping");
+							else {
+//								System.out.println(Thread.currentThread().getName() + ": sleeping");
 								lock.wait(windowsSize); // TODO: All threads go to sleep, somehow.
-//							}
+							}
 						}
 
 						long x = windowEnd;
@@ -111,20 +82,7 @@ public class ConsumerThread implements Runnable {
 
 					}
 
-					if (transaction.getProfileId().equals(RESELLER_TRANSACTION_PROFILE) || transaction.getProfileId().equals(TOPUP_PROFILE)) {
-
-						PriorityBlockingQueue<Transaction> transactionQueue = transactionHasMap.get(transactionSenderId);
-						if (transactionQueue == null) {
-							PriorityBlockingQueue<Transaction> transactions = new PriorityBlockingQueue<>(100, new TransactionComparator());
-							transactions.add(transaction);
-							transactionHasMap.put(transactionSenderId, transactions);
-//							System.out.println("New queue created  " + transactionSenderId + " and transaction " + transaction.getTransactionId() + " introduced");
-						}
-						else {
-//							System.out.println("Transaction " + transaction.getTransactionId() + " in the queue " + transactionSenderId);
-							transactionQueue.add(transaction);
-						}
-					}
+					addRecordToRespectiveQueues(new TransactionWrapper(transaction, ingestionTime, currentTime));
 				}
 			}
 
@@ -135,8 +93,20 @@ public class ConsumerThread implements Runnable {
 
 	}
 
-
-	private Transaction getMediandTransaction(PriorityBlockingQueue<Transaction> transactionsQueue) {
-		return null;
+	private void addRecordToRespectiveQueues(TransactionWrapper transaction) {
+		reports.forEach(x -> x.process(transaction));
 	}
+
+	private void processReports() {
+		for (Report report : reports) {
+			try {
+				report.materialize();
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+
 }

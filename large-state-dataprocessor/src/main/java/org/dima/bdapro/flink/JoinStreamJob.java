@@ -15,10 +15,13 @@ import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
+import org.apache.flink.util.Collector;
+import org.apache.flink.util.OutputTag;
 import org.dima.bdapro.datalayer.bean.Transaction;
 import org.dima.bdapro.flink.datalayer.json.TransactionDeserializationSchema;
 
@@ -30,11 +33,13 @@ import static org.dima.bdapro.utils.Constants.SUBSCRIBER_TRANSACTION_PROFILE;
 import static org.dima.bdapro.utils.Constants.TOPUP_PROFILE;
 
 public class JoinStreamJob {
-
+    private static String outputDir;
     private static StreamExecutionEnvironment STREAM_EXECUTION_ENVIRONMENT;
 
     public static void main(String[] args) throws Exception {
-        Properties props = PropertiesHandler.getInstance(args != null && args.length > 1 ? args[0] : "large-state-dataprocessor/src/main/conf/flink-processor.properties").getModuleProperties();
+        Properties props = PropertiesHandler.getInstance(args != null && args.length >= 1 ? args[0] : "large-state-dataprocessor/src/main/conf/flink-processor.properties").getModuleProperties();
+
+        outputDir = args[1];
 
         DataStream<Transaction> trasactionStream = initConsumer(props);
         calculateRewardedSubscribers(trasactionStream, props);
@@ -92,8 +97,9 @@ public class JoinStreamJob {
         DataStream<Tuple2<Transaction, Long>> sts = ct
                 .filter(x -> x.f0.getProfileId().equals(SUBSCRIBER_TRANSACTION_PROFILE));
 
+        final OutputTag<String> outputTag = new OutputTag<String>("side-output"){};
 
-        DataStream<Tuple4<String, String, Long, Long>> joinedDataStream = rts.join(sts)
+        DataStream<Tuple2<Long, Long>> joinedDataStream = rts.join(sts)
                 .where(new KeySelector<Tuple2<Transaction, Long>, String>() {
                     @Override
                     public String getKey(Tuple2<Transaction, Long> transactionLongTuple2) throws Exception {
@@ -115,59 +121,26 @@ public class JoinStreamJob {
                     )
                 ).apply(new JoinWindowFunction()).keyBy(0)
                 .reduce(new ReduceTransactionFunction())
-                .filter( t -> t.f3 >= 0.4*t.f1)
-                .map(new MapFunction<Tuple6<String, Double, String, Double, Long, Long>, Tuple4<String, String, Long, Long>>() {
+                .process(new ProcessFunction<Tuple6<String, Double, String, Double, Long, Long>, Tuple2<Long, Long>>() {
                     @Override
-                    public Tuple4<String, String, Long, Long> map(Tuple6<String, Double, String, Double, Long, Long> x) throws Exception {
-                        return new Tuple4<String, String, Long, Long>("rewarded", x.f2, x.f4, x.f5);
+                    public void processElement(Tuple6<String, Double, String, Double, Long, Long> t, Context context, Collector<Tuple2<Long, Long>> collector) throws Exception {
+                        if (t.f3 >= 0.4*t.f1){
+                            context.output(outputTag, t.f2);
+                        }
+
+                        long eventLatency = System.currentTimeMillis()-t.f4;
+                        long procLatency = System.currentTimeMillis()-t.f5;
+
+                        collector.collect(new Tuple2<Long, Long>(eventLatency, procLatency));
                     }
                 });
-        joinedDataStream.keyBy(0).map(new JoinLatencyMap()).writeAsCsv("latency_query_join.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+
+        joinedDataStream.writeAsCsv(outputDir+"latency_query_join.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+        //joinedDataStream.keyBy(0).map(new JoinLatencyMap()).writeAsCsv("latency_query_join.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
     }
 
 }
-
-class JoinLatencyMap extends RichMapFunction<Tuple4<String, String, Long, Long>, Tuple6<String, String, Long, Long, Double, Double>> {
-    private transient ValueState<Double> avgEventLatency;
-    private transient ValueState<Double> avgProcessingLatency;
-    private  transient ValueState<Integer> N;
-
-    @Override
-    public void open(Configuration parameters) throws Exception {
-        try {
-            ValueStateDescriptor<Double> stateDescriptor = new ValueStateDescriptor<>("event-avg", TypeInformation.of(Double.class));
-            avgEventLatency = getRuntimeContext().getState(stateDescriptor);
-            stateDescriptor = new ValueStateDescriptor<>("process-avg", TypeInformation.of(Double.class));
-            avgProcessingLatency = getRuntimeContext().getState(stateDescriptor);
-            ValueStateDescriptor<Integer> otherState = new ValueStateDescriptor<Integer>("N", TypeInformation.of(Integer.class));
-            N = getRuntimeContext().getState(otherState);
-        }
-        catch(Exception e){
-            System.out.println(e.getMessage());
-            throw e;
-        }
-
-    }
-
-    @Override
-    public Tuple6<String, String, Long, Long, Double, Double> map(Tuple4<String, String, Long, Long> x) throws Exception {
-        if (avgEventLatency.value() == null){
-            avgEventLatency.update(0.0);
-            avgProcessingLatency.update(0.0);
-            N.update(0);
-        }
-        long eventLatency = System.currentTimeMillis()-x.f2;
-        long procLatency = System.currentTimeMillis()-x.f3;
-        System.out.println(eventLatency);
-        System.out.println(procLatency);
-        avgEventLatency.update((avgEventLatency.value() * N.value() + eventLatency)/(N.value()+1));
-        avgProcessingLatency.update((avgProcessingLatency.value() * N.value() + procLatency)/(N.value()+1));
-        N.update(N.value()+1);
-        return new Tuple6<>(x.f0, x.f1, x.f2, x.f3, avgEventLatency.value() , avgProcessingLatency.value());
-    }
-}
-
 
 class JoinWindowFunction implements JoinFunction<Tuple2<Transaction, Long>, Tuple2<Transaction, Long>, Tuple6<String, Double, String, Double, Long, Long>> {
     @Override

@@ -24,10 +24,10 @@ hs_err_pid*
 
 # IntelliJ iml
 *.iml
-.idea
 
-#stats
+# stats files
 *.csv
 *.txt
 
-
+# target
+*target
