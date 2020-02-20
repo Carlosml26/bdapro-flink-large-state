@@ -23,11 +23,13 @@ public class ProducerThread implements Runnable {
 	private final DataGenerator dataGenerator;
 	private final Properties props;
 	private final int maxMessagesPerSecond;
+	private final int numberOfMessages;
 
 
-	public ProducerThread(int producerNumber, int maxMessagesPerSecond) throws IOException {
+	public ProducerThread(int producerNumber, int maxMessagesPerSecond, int numberOfMessages) throws IOException {
 		this.props = PropertiesHandler.getInstance().getModuleProperties();
 		this.maxMessagesPerSecond = maxMessagesPerSecond;
+		this.numberOfMessages = numberOfMessages;
 		this.producer = new KafkaProducer<Integer, Transaction>(props, new IntegerSerializer(), new TransactionSerializer());
 		this.topic = props.getProperty("topic");
 		this.producerNumber = producerNumber;
@@ -40,12 +42,13 @@ public class ProducerThread implements Runnable {
 		int p_topup = Integer.parseInt(props.getProperty("datagenerator.transaction.p_topup", "1"));
 		int p_call = Integer.parseInt(props.getProperty("datagenerator.transaction.p_call", "1"));
 		final RateLimiter rateLimiter = RateLimiter.create(maxMessagesPerSecond);
-		int i = 0;
 
-		while (true) {
+		for (int j = 0; j < numberOfMessages; j++) {
 			Transaction msg;
-//            msg = new Transaction(null,"Transaction"+i,"Sender"+producerNumber,"SenderType"+producerNumber,"Receiver"+i,"ReceiverType"+i, 50.0);
-			msg = dataGenerator.genTransaction(i, p_credit, p_topup, p_call);
+			msg = dataGenerator.genTransaction(j, p_credit, p_topup, p_call);
+			if (msg == null) {
+				throw new RuntimeException("The proportion of the transactions is not correct");
+			}
 			rateLimiter.acquire();
 
 			producer.send(new ProducerRecord<Integer, Transaction>(topic, producerNumber, msg), new Callback() {
@@ -66,7 +69,6 @@ public class ProducerThread implements Runnable {
 			catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			i++;
 		}
 	}
 

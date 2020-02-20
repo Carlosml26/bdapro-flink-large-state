@@ -5,28 +5,30 @@ import org.dima.bdapro.utils.PropertiesHandler;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 public final class ProducerGroup {
 
-	private final int numberOfProducers;
-	private int maxMessagesPerSecond;
 	private List<ProducerThread> producers;
 
 	public ProducerGroup() throws IOException {
-		this.numberOfProducers = Integer.parseInt(PropertiesHandler.getInstance().getModuleProperties().getProperty("n_producers"));
+		int numberOfProducers = Integer.parseInt(PropertiesHandler.getInstance().getModuleProperties().getProperty("n_producers"));
 		producers = new ArrayList<>();
-		this.maxMessagesPerSecond = Integer.parseInt(PropertiesHandler.getInstance().getModuleProperties().getProperty("max_number_messages"));
 
-		int maxMessagesPerThread = Math.floorDiv(maxMessagesPerSecond, numberOfProducers);
-		int remainder = maxMessagesPerThread%numberOfProducers;
+		int maxMessagesPerSecond = Integer.parseInt(PropertiesHandler.getInstance().getModuleProperties().getProperty("max_rate_messages"));
+		int maxNumberOfMessages = Integer.parseInt(PropertiesHandler.getInstance().getModuleProperties().getProperty("max_number_messages"));
 
-		for (int i = 0; i < this.numberOfProducers; i++) {
+		int maxRatePerThread = Math.floorDiv(maxMessagesPerSecond, numberOfProducers);
+		int remMps = maxRatePerThread % numberOfProducers;
+
+		int maxMessagesPerThread = Math.floorDiv(maxNumberOfMessages, numberOfProducers);
+		int remMpThread = maxMessagesPerThread % numberOfProducers;
+
+		for (int id = 0; id < numberOfProducers; id++) {
 			ProducerThread npThread;
-			if (i < remainder)
-				npThread = new ProducerThread(i,maxMessagesPerThread+1);
-			else
-				npThread = new ProducerThread(i,maxMessagesPerThread);
+			int rate = id < remMps ? maxRatePerThread + 1 : maxRatePerThread;
+			int numMessages = id < remMpThread ? maxMessagesPerThread + 1 : maxMessagesPerThread;
+
+			npThread = new ProducerThread(id, rate, numMessages);
 
 			producers.add(npThread);
 		}
