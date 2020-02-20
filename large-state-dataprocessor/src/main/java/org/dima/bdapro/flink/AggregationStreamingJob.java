@@ -1,13 +1,8 @@
 package org.dima.bdapro.flink;
 
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.functions.RichMapFunction;
-import org.apache.flink.api.common.state.ValueState;
-import org.apache.flink.api.common.state.ValueStateDescriptor;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.*;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
@@ -33,14 +28,17 @@ import static org.dima.bdapro.utils.Constants.RESELLER_TRANSACTION_PROFILE;
 public class AggregationStreamingJob {
 
 	public static void main(String[] args) throws Exception {
-		Properties props = PropertiesHandler.getInstance(args != null && args.length > 1 ? args[0] : "large-state-dataprocessor/src/main/conf/flink-processor.properties").getModuleProperties();
 
+		Properties props = PropertiesHandler.getInstance(args != null && args.length > 1 ? args[1] : "large-state-dataprocessor/src/main/conf/flink-processor.properties").getModuleProperties();
+		String outputDir = "";
+		if (args.length == 3){
+			outputDir = args[2];
+		}
 		// set up the streaming execution environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.enableCheckpointing(Long.parseLong(props.getProperty("flink.checkpointing.delay")), CheckpointingMode.EXACTLY_ONCE);
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 		env.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism")));
-
 
 		FlinkKafkaConsumer<Transaction> consumer = new FlinkKafkaConsumer<Transaction>(
 				props.getProperty("topic"),
@@ -73,12 +71,25 @@ public class AggregationStreamingJob {
 				})// put timestamp for latency
 				.filter(x -> x.f0.getProfileId().equals(RESELLER_TRANSACTION_PROFILE));
 
-
-		DataStream<Tuple5<String, Double, Integer, Long, Long>> aggPerResellerId = ct.keyBy((KeySelector<Tuple2<Transaction, Long>, String>) x -> (args[0].equals("id"))?x.f0.getSenderId():x.f0.getSenderType())
+		DataStream<Tuple5<String,  Integer, Double, Long, Long>> aggPerResellerId = ct.keyBy((KeySelector<Tuple2<Transaction, Long>, String>) x -> (args[0].equals("id"))?x.f0.getSenderId():x.f0.getSenderType())
 				.timeWindow(Time.milliseconds(Integer.parseInt(props.getProperty("flink.query.agg_per_ressellerId.time_window_size_ms"))))
 				.apply(new MedianWindowFunction());
 
-		aggPerResellerId.keyBy(0).map(new LatencyMap()).writeAsCsv("latency_query_sender_" +args[0]+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+		aggPerResellerId.map(new MapFunction<Tuple5<String, Integer, Double, Long, Long>, Tuple2<Long, Long>>() {
+			@Override
+			public Tuple2<Long, Long> map(Tuple5<String, Integer, Double, Long, Long> t) throws Exception {
+				long eventLatency = System.currentTimeMillis()-t.f3;
+				long procLatency = System.currentTimeMillis()-t.f4;
+				return new Tuple2<>(eventLatency, procLatency);
+			}
+		}).writeAsCsv(outputDir+"latency_query_sender_" +args[0]+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+
+		aggPerResellerId.map(new MapFunction<Tuple5<String, Integer, Double, Long, Long>, Tuple3<String, Integer, Double>>() {
+			@Override
+			public Tuple3<String, Integer, Double> map(Tuple5<String, Integer, Double, Long, Long> x) throws Exception {
+				return new Tuple3<String, Integer, Double>(x.f0, x.f1, x.f2);
+			}
+		}).writeAsCsv(outputDir+"result_query_sender_"+args[0]+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");
@@ -86,49 +97,10 @@ public class AggregationStreamingJob {
 
 }
 
-class LatencyMap extends RichMapFunction<Tuple5<String, Double, Integer, Long, Long>, Tuple7<String, Double, Integer, Long, Long, Double, Double>> {
-	private transient ValueState<Double> avgEventLatency;
-	private transient ValueState<Double> avgProcessingLatency;
-	private  transient ValueState<Integer> N;
+class MedianWindowFunction implements WindowFunction<Tuple2<Transaction, Long>, Tuple5<String, Integer, Double, Long, Long>, String, TimeWindow> {
 
 	@Override
-	public void open(Configuration parameters) throws Exception {
-		try {
-			ValueStateDescriptor<Double> stateDescriptor = new ValueStateDescriptor<>("event-avg", TypeInformation.of(Double.class));
-			avgEventLatency = getRuntimeContext().getState(stateDescriptor);
-			stateDescriptor = new ValueStateDescriptor<>("process-avg", TypeInformation.of(Double.class));
-			avgProcessingLatency = getRuntimeContext().getState(stateDescriptor);
-			ValueStateDescriptor<Integer> otherState = new ValueStateDescriptor<Integer>("N", TypeInformation.of(Integer.class));
-			N = getRuntimeContext().getState(otherState);
-		}
-		catch(Exception e){
-			System.out.println(e.getMessage());
-			throw e;
-		}
-
-	}
-
-	@Override
-	public Tuple7<String, Double, Integer, Long, Long, Double, Double> map(Tuple5<String, Double, Integer, Long, Long> x) throws Exception {
-		if (avgEventLatency.value() == null){
-			avgEventLatency.update(0.0);
-			avgProcessingLatency.update(0.0);
-			N.update(0);
-		}
-		long eventLatency = System.currentTimeMillis()-x.f3;
-		long procLatency = System.currentTimeMillis()-x.f4;
-		//System.out.println(eventLatency);
-		avgEventLatency.update((avgEventLatency.value() * N.value() + eventLatency)/(N.value()+1));
-		avgProcessingLatency.update((avgProcessingLatency.value() * N.value() + procLatency)/(N.value()+1));
-		N.update(N.value()+1);
-		return new Tuple7<>(x.f0, x.f1, x.f2, x.f3, x.f4, avgEventLatency.value() , avgProcessingLatency.value());
-	}
-}
-
-class MedianWindowFunction implements WindowFunction<Tuple2<Transaction, Long>, Tuple5<String, Double, Integer, Long, Long>, String, TimeWindow> {
-
-	@Override
-	public void apply(String s, TimeWindow window, Iterable<Tuple2<Transaction, Long>> elements, Collector<Tuple5<String, Double, Integer, Long, Long>> out) throws Exception {
+	public void apply(String s, TimeWindow window, Iterable<Tuple2<Transaction, Long>> elements, Collector<Tuple5<String, Integer, Double, Long, Long>> out) throws Exception {
 
 		LiveMedianCalculator<Transaction> medianCalculator = new LiveMedianCalculator<>((x, y) -> x.getTransactionAmount().compareTo(y.getTransactionAmount()),
 				(x, y) -> {
@@ -148,7 +120,7 @@ class MedianWindowFunction implements WindowFunction<Tuple2<Transaction, Long>, 
 			}
 		}
 
-		out.collect(new Tuple5<>("reseller", medianCalculator.median().getTransactionAmount(), medianCalculator.count(), maxEventTime, maxProcTime));
+		out.collect(new Tuple5<>(s, medianCalculator.count(), medianCalculator.median().getTransactionAmount(), maxEventTime, maxProcTime));
 
 	}
 }
