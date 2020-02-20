@@ -30,7 +30,10 @@ public class AggregationStreamingJob {
 	public static void main(String[] args) throws Exception {
 
 		Properties props = PropertiesHandler.getInstance(args != null && args.length > 1 ? args[1] : "large-state-dataprocessor/src/main/conf/flink-processor.properties").getModuleProperties();
-
+		String outputDir = "";
+		if (args.length == 3){
+			outputDir = args[2];
+		}
 		// set up the streaming execution environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.enableCheckpointing(Long.parseLong(props.getProperty("flink.checkpointing.delay")), CheckpointingMode.EXACTLY_ONCE);
@@ -79,14 +82,14 @@ public class AggregationStreamingJob {
 				long procLatency = System.currentTimeMillis()-t.f4;
 				return new Tuple2<>(eventLatency, procLatency);
 			}
-		}).writeAsCsv("latency_query_sender_" +args[0]+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+		}).writeAsCsv(outputDir+"latency_query_sender_" +args[0]+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
 		aggPerResellerId.map(new MapFunction<Tuple5<String, Integer, Double, Long, Long>, Tuple3<String, Integer, Double>>() {
 			@Override
 			public Tuple3<String, Integer, Double> map(Tuple5<String, Integer, Double, Long, Long> x) throws Exception {
 				return new Tuple3<String, Integer, Double>(x.f0, x.f1, x.f2);
 			}
-		}).writeAsCsv("result_query_sender_"+args[0]+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+		}).writeAsCsv(outputDir+"result_query_sender_"+args[0]+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");

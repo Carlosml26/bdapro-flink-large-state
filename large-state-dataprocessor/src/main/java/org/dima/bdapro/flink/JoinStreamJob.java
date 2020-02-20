@@ -33,11 +33,13 @@ import static org.dima.bdapro.utils.Constants.SUBSCRIBER_TRANSACTION_PROFILE;
 import static org.dima.bdapro.utils.Constants.TOPUP_PROFILE;
 
 public class JoinStreamJob {
-
+    private static String outputDir;
     private static StreamExecutionEnvironment STREAM_EXECUTION_ENVIRONMENT;
 
     public static void main(String[] args) throws Exception {
-        Properties props = PropertiesHandler.getInstance(args != null && args.length > 1 ? args[0] : "large-state-dataprocessor/src/main/conf/flink-processor.properties").getModuleProperties();
+        Properties props = PropertiesHandler.getInstance(args != null && args.length >= 1 ? args[0] : "large-state-dataprocessor/src/main/conf/flink-processor.properties").getModuleProperties();
+
+        outputDir = args[1];
 
         DataStream<Transaction> trasactionStream = initConsumer(props);
         calculateRewardedSubscribers(trasactionStream, props);
@@ -133,7 +135,7 @@ public class JoinStreamJob {
                     }
                 });
 
-        joinedDataStream.writeAsCsv("latency_query_join.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+        joinedDataStream.writeAsCsv(outputDir+"latency_query_join.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
         //joinedDataStream.keyBy(0).map(new JoinLatencyMap()).writeAsCsv("latency_query_join.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
     }
