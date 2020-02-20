@@ -90,7 +90,7 @@ public class LevelUsageStatistics extends AbstractReport {
 	}
 
 	private String getStatsOutput(TransactionWrapper wrapper, Long timestamp) {
-		String statsFormat = "%d, %d"; // processing time latency, event time latency
+		String statsFormat = "%d, %d, %d"; // processing time latency, event time latency
 
 		long eventLatency = timestamp - wrapper.getEventTime();
 		long procLatency = timestamp - wrapper.getIngestionTime();
@@ -98,6 +98,7 @@ public class LevelUsageStatistics extends AbstractReport {
 
 		return String.format(statsFormat,
 				eventLatency,
-				procLatency);
+				procLatency,
+				wrapper.getEventTime());
 	}
 }

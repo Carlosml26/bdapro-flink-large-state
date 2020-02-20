@@ -137,7 +137,7 @@ public class RewardedSubscribers extends AbstractReport {
 	}
 
 	private String getStatsOutput(Long maxEventTime, Long maxProcTime, Long timestamp) {
-		String statsFormat = "%d, %d"; // processing time latency, event time latency
+		String statsFormat = "%d, %d, %d"; // processing time latency, event time latency
 
 		long eventLatency = timestamp - maxEventTime;
 		long procLatency = timestamp - maxProcTime;
@@ -145,6 +145,7 @@ public class RewardedSubscribers extends AbstractReport {
 
 		return String.format(statsFormat,
 				eventLatency,
-				procLatency);
+				procLatency,
+				maxEventTime);
 	}
 }

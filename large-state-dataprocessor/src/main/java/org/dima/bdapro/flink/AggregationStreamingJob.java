@@ -75,12 +75,13 @@ public class AggregationStreamingJob {
 				.timeWindow(Time.milliseconds(Integer.parseInt(props.getProperty("flink.query.agg_per_ressellerId.time_window_size_ms"))))
 				.apply(new MedianWindowFunction());
 
-		aggPerResellerId.map(new MapFunction<Tuple5<String, Integer, Double, Long, Long>, Tuple2<Long, Long>>() {
+		aggPerResellerId.map(new MapFunction<Tuple5<String, Integer, Double, Long, Long>, Tuple3<Long, Long, Long>>() {
 			@Override
-			public Tuple2<Long, Long> map(Tuple5<String, Integer, Double, Long, Long> t) throws Exception {
-				long eventLatency = System.currentTimeMillis()-t.f3;
-				long procLatency = System.currentTimeMillis()-t.f4;
-				return new Tuple2<>(eventLatency, procLatency);
+			public Tuple3<Long, Long, Long> map(Tuple5<String, Integer, Double, Long, Long> t) throws Exception {
+				long timestamp = System.currentTimeMillis();
+				long eventLatency = timestamp-t.f3;
+				long procLatency = timestamp-t.f4;
+				return new Tuple3<>(eventLatency, procLatency, t.f3);
 			}
 		}).writeAsCsv(outputDir+"latency_query_sender_" +args[0]+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
@@ -114,8 +115,10 @@ class MedianWindowFunction implements WindowFunction<Tuple2<Transaction, Long>, 
 		for (Tuple2<Transaction, Long> t : elements) {
 			medianCalculator.add(t.f0);
 
-			if (maxEventTime < t.f0.getTransactionTime()){
+			if (maxEventTime < t.f0.getTransactionTime()) {
 				maxEventTime = t.f0.getTransactionTime();
+			}
+			if (maxProcTime < t.f1){
 				maxProcTime = t.f1;
 			}
 		}

@@ -99,7 +99,7 @@ public class JoinStreamJob {
 
         final OutputTag<String> outputTag = new OutputTag<String>("side-output"){};
 
-        DataStream<Tuple2<Long, Long>> joinedDataStream = rts.join(sts)
+        DataStream<Tuple3<Long, Long, Long>> joinedDataStream = rts.join(sts)
                 .where(new KeySelector<Tuple2<Transaction, Long>, String>() {
                     @Override
                     public String getKey(Tuple2<Transaction, Long> transactionLongTuple2) throws Exception {
@@ -121,17 +121,17 @@ public class JoinStreamJob {
                     )
                 ).apply(new JoinWindowFunction()).keyBy(0)
                 .reduce(new ReduceTransactionFunction())
-                .process(new ProcessFunction<Tuple6<String, Double, String, Double, Long, Long>, Tuple2<Long, Long>>() {
+                .process(new ProcessFunction<Tuple6<String, Double, String, Double, Long, Long>, Tuple3<Long, Long, Long>>() {
                     @Override
-                    public void processElement(Tuple6<String, Double, String, Double, Long, Long> t, Context context, Collector<Tuple2<Long, Long>> collector) throws Exception {
+                    public void processElement(Tuple6<String, Double, String, Double, Long, Long> t, Context context, Collector<Tuple3<Long, Long, Long>> collector) throws Exception {
                         if (t.f3 >= 0.4*t.f1){
                             context.output(outputTag, t.f2);
                         }
+                        long timestamp = System.currentTimeMillis();
+                        long eventLatency = timestamp-t.f4;
+                        long procLatency = timestamp-t.f5;
 
-                        long eventLatency = System.currentTimeMillis()-t.f4;
-                        long procLatency = System.currentTimeMillis()-t.f5;
-
-                        collector.collect(new Tuple2<Long, Long>(eventLatency, procLatency));
+                        collector.collect(new Tuple3<Long, Long, Long>(eventLatency, procLatency, t.f4));
                     }
                 });
 
@@ -165,14 +165,16 @@ class ReduceTransactionFunction implements ReduceFunction<Tuple6<String, Double,
     public Tuple6<String, Double, String, Double, Long, Long> reduce(Tuple6<String, Double, String, Double, Long, Long> t0, Tuple6<String, Double, String, Double, Long, Long> t1)  {
         Long maxEvent, maxProc;
 
-        if (t0.f4>t1.f4){
+        if (t0.f4 > t1.f4)
             maxEvent = t0.f4;
-            maxProc = t0.f5;
-        }
-        else{
+        else
             maxEvent = t1.f4;
+
+        if (t0.f5 > t1.f5)
+            maxProc = t0.f5;
+        else
             maxProc = t1.f5;
-        }
+
         return new Tuple6<>(t0.f0,t0.f1,t1.f2, t0.f3+t1.f3, maxEvent, maxProc);
     }
 }
