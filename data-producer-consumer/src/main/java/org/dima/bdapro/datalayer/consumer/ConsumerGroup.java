@@ -43,6 +43,7 @@ public final class ConsumerGroup {
 		List<Report> reports = new ArrayList<>(1);
 		final String query = properties.getProperty("dataconsumer.query");
 		if ("ResellerUsageStatistics".equals(query)) {
+			System.out.println("ResellerUsageStats");
 			reports.add(ResellerUsageStatistics.getInstance());
 			ResellerUsageStatistics.getInstance().init("java-reseller-output.txt", "java-reseller-stats.txt");
 		}
