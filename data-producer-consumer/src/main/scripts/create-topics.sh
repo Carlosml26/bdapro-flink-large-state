@@ -1,2 +1,4 @@
 #!/usr/bin/env bash
-${KAFKA_HOME}/bin/kafka-topics.sh --create --zookeeper localhost:2181  --replication-factor 1 --partitions 3 --topic HelloKafkaTopic1
+source "`dirname $0`/enivorenment.sh"
+echo $N_PARTITIONS
+${KAFKA_HOME}/bin/kafka-topics.sh --create --zookeeper localhost:2181  --replication-factor 1 --partitions $N_PARTITIONS --topic HelloKafkaTopic1
