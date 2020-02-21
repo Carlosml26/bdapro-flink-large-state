@@ -88,7 +88,7 @@
               </filters>
               <transformers>
                 <transformer>
-                  <mainClass>org.dima.bdapro.flink.JoinStreamJob</mainClass>
+                  <mainClass>org.dima.bdapro.flink.AggregationStreamingJob</mainClass>
                 </transformer>
               </transformers>
             </configuration>
