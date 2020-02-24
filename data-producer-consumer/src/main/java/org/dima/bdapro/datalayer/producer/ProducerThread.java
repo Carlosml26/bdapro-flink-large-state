@@ -1,5 +1,6 @@
 package org.dima.bdapro.datalayer.producer;
 
+import com.google.common.util.concurrent.RateLimiter;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.IntegerSerializer;
@@ -37,9 +38,9 @@ public class ProducerThread implements Runnable {
 		int p_credit = Integer.parseInt(props.getProperty("datagenerator.transaction.p_credit", "1"));
 		int p_topup = Integer.parseInt(props.getProperty("datagenerator.transaction.p_topup", "1"));
 		int p_call = Integer.parseInt(props.getProperty("datagenerator.transaction.p_call", "1"));
-//		final RateLimiter rateLimiter = RateLimiter.create(maxMessagesPerSecond);
+		final RateLimiter rateLimiter = RateLimiter.create(maxMessagesPerSecond);
 
-//		long startT = System.currentTimeMillis();
+		long startT = System.currentTimeMillis();
 
 		for (int j = 0; j < numberOfMessages; j++) {
 			Transaction msg;
@@ -47,7 +48,7 @@ public class ProducerThread implements Runnable {
 			if (msg == null) {
 				throw new RuntimeException("The proportion of the transactions is not correct");
 			}
-//			rateLimiter.acquire();
+			rateLimiter.acquire();
 
 			producer.send(new ProducerRecord<Integer, Transaction>(topic, producerNumber, msg));
 		}
