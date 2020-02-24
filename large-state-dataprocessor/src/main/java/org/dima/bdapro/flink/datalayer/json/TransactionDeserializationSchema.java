@@ -4,16 +4,16 @@ import org.apache.flink.api.common.serialization.DeserializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 
 import org.dima.bdapro.datalayer.bean.Transaction;
-import org.dima.bdapro.datalayer.bean.json.TransactionDeserializer;
+import org.dima.bdapro.datalayer.bean.bytesarray.TransactionDeserializer;
 
 import java.io.IOException;
 
 public class TransactionDeserializationSchema implements DeserializationSchema<Transaction> {
-	private TransactionDeserializer<Transaction> deserializer = new TransactionDeserializer<>(Transaction.class);
+	private TransactionDeserializer deserializer = new TransactionDeserializer();
 
 	@Override
 	public Transaction deserialize(byte[] message) throws IOException {
-		return (Transaction) deserializer.deserialize(null, message);
+		return deserializer.deserialize(null, message);
 	}
 
 	@Override

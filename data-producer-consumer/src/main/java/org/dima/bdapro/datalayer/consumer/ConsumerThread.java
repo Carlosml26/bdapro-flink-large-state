@@ -8,7 +8,7 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.dima.bdapro.analytics.Report;
 import org.dima.bdapro.datalayer.bean.Transaction;
 import org.dima.bdapro.datalayer.bean.TransactionWrapper;
-import org.dima.bdapro.datalayer.bean.json.TransactionDeserializer;
+import org.dima.bdapro.datalayer.bean.bytesarray.TransactionDeserializer;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -29,7 +29,7 @@ public class ConsumerThread implements Runnable {
 	private AtomicInteger numberProducers;
 
 	public ConsumerThread(Properties props, Object lock, AtomicInteger numberProducers, List<Report> reports) throws IOException {
-		consumer = new KafkaConsumer<String, Transaction>(props, new StringDeserializer(), new TransactionDeserializer<Transaction>(Transaction.class));
+		consumer = new KafkaConsumer<String, Transaction>(props, new StringDeserializer(), new TransactionDeserializer());
 		topic = props.getProperty("topic");
 		this.props = props;
 		consumer.subscribe(Arrays.asList(topic));
