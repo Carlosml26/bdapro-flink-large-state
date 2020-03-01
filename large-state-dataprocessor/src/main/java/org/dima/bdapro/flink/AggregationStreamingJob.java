@@ -7,6 +7,7 @@ import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
@@ -38,13 +39,14 @@ public class AggregationStreamingJob {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.enableCheckpointing(Long.parseLong(props.getProperty("flink.checkpointing.delay")), CheckpointingMode.EXACTLY_ONCE);
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-		env.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism")));
+		env.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.sink")));
 
 		FlinkKafkaConsumer<Transaction> consumer = new FlinkKafkaConsumer<Transaction>(
 				props.getProperty("topic"),
 				new TransactionDeserializationSchema(),
 				props
 		);
+
 
 		consumer.assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Transaction>(
 				Time.milliseconds(Integer.parseInt(props.getProperty("flink.kafka.consumer.watermark-delay_milliseconds")))) {
@@ -61,36 +63,38 @@ public class AggregationStreamingJob {
 			consumer.setStartFromLatest();
 		}
 
-		DataStream<Transaction> transactionStream = env.addSource(consumer);
+		DataStream<Transaction> transactionStream = env.addSource(consumer).setParallelism(
+				Integer.parseInt(props.getProperty("flink.parallelism.sink")));
+
 		DataStream<Tuple2<Transaction, Long>> ct = transactionStream
 				.map(new MapFunction<Transaction, Tuple2<Transaction, Long>>() {
 					@Override
 					public Tuple2<Transaction, Long> map(Transaction transaction) throws Exception {
 						return new Tuple2<>(transaction, System.currentTimeMillis());
 					}
-				})// put timestamp for latency
-				.filter(x -> x.f0.getProfileId().equals(RESELLER_TRANSACTION_PROFILE));
+				})
+				.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.sink")))// put timestamp for latency
+				.filter(x -> x.f0.getProfileId().equals(RESELLER_TRANSACTION_PROFILE))
+				.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.sink")));
 
-		DataStream<Tuple5<String,  Integer, Double, Long, Long>> aggPerResellerId = ct.keyBy((KeySelector<Tuple2<Transaction, Long>, String>) x -> (args[0].equals("id"))?x.f0.getSenderId():x.f0.getSenderType())
+		SingleOutputStreamOperator<Tuple3<Long, Long, Long>> aggPerResellerId = ct.keyBy((KeySelector<Tuple2<Transaction, Long>, String>) x -> (args[0].equals("id"))?x.f0.getSenderId():x.f0.getSenderType())
 				.timeWindow(Time.milliseconds(Integer.parseInt(props.getProperty("flink.query.agg_per_ressellerId.time_window_size_ms"))))
-				.apply(new MedianWindowFunction());
+				.apply(new MedianWindowFunction())
+				.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.window")))
+				.map(new MapFunction<Tuple5<String, Integer, Double, Long, Long>, Tuple3<Long, Long, Long>>() {
+					@Override
+					public Tuple3<Long, Long, Long> map(Tuple5<String, Integer, Double, Long, Long> t) throws Exception {
+						long timestamp = System.currentTimeMillis();
+						long eventLatency = timestamp-t.f3;
+						long procLatency = timestamp-t.f4;
+						return new Tuple3<>(eventLatency, procLatency, t.f3);
+					}
+				})
+				.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.window")));
 
-		aggPerResellerId.map(new MapFunction<Tuple5<String, Integer, Double, Long, Long>, Tuple3<Long, Long, Long>>() {
-			@Override
-			public Tuple3<Long, Long, Long> map(Tuple5<String, Integer, Double, Long, Long> t) throws Exception {
-				long timestamp = System.currentTimeMillis();
-				long eventLatency = timestamp-t.f3;
-				long procLatency = timestamp-t.f4;
-				return new Tuple3<>(eventLatency, procLatency, t.f3);
-			}
-		}).writeAsCsv(outputDir+"latency_query_sender_" +args[0]+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+		aggPerResellerId.writeAsCsv(outputDir+"latency_query_sender_" +args[0]+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
-		aggPerResellerId.map(new MapFunction<Tuple5<String, Integer, Double, Long, Long>, Tuple3<String, Integer, Double>>() {
-			@Override
-			public Tuple3<String, Integer, Double> map(Tuple5<String, Integer, Double, Long, Long> x) throws Exception {
-				return new Tuple3<String, Integer, Double>(x.f0, x.f1, x.f2);
-			}
-		}).writeAsCsv(outputDir+"result_query_sender_"+args[0]+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+		//aggPerResellerId.map(x -> new Tuple3<String, Integer, Double>(x.f0, x.f1, x.f2)).writeAsCsv(outputDir+"result_query_sender_"+args[0]+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");

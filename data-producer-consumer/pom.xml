@@ -25,7 +25,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>org.dima.bdapro.datalayer.producer.ProducerStarter</mainClass>
+                            <mainClass>org.dima.bdapro.datalayer.consumer.ConsumerStarter</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -39,7 +39,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>org.dima.bdapro.datalayer.producer.ProducerStarter</mainClass>
+                            <mainClass>org.dima.bdapro.datalayer.consumer.ConsumerStarter</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

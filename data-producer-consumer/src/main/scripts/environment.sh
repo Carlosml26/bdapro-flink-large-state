@@ -4,4 +4,4 @@ export KAFKA_HOME="/usr/local/kafka/"
 #change this to your own root dir
 #export ROOT_DIR="/home/cmcuza/IdeaProjects/bdapro-flink-large-state/"
 
-export N_PARTITIONS=6
+export N_PARTITIONS=3
