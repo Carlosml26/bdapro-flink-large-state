@@ -1,5 +1,7 @@
 package org.dima.bdapro.datalayer.producer;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.dima.bdapro.utils.PropertiesHandler;
 
 import java.io.IOException;
@@ -7,6 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class ProducerGroup {
+
+	private static final Logger LOG = LogManager.getLogger(ProducerGroup.class);
 
 	private List<ProducerThread> producers;
 
@@ -32,6 +36,28 @@ public final class ProducerGroup {
 
 			producers.add(npThread);
 		}
+
+		final Thread mainThread = Thread.currentThread();
+
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+
+			@Override
+			public void run() {
+				LOG.info("Shutdown hook invoked...");
+				for (ProducerThread producerThread : producers) {
+					producerThread.getInternalProducer().flush();
+					producerThread.getInternalProducer().close();
+				}
+
+				try {
+					mainThread.join();
+				}
+				catch (InterruptedException e) {
+					LOG.error(e);
+				}
+
+			}
+		});
 	}
 
 	public void execute() {
