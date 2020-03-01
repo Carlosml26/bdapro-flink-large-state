@@ -40,8 +40,6 @@ public class ProducerThread implements Runnable {
 		int p_call = Integer.parseInt(props.getProperty("datagenerator.transaction.p_call", "1"));
 		final RateLimiter rateLimiter = RateLimiter.create(maxMessagesPerSecond);
 
-		long startT = System.currentTimeMillis();
-
 		for (int j = 0; j < numberOfMessages; j++) {
 			Transaction msg;
 			msg = dataGenerator.genTransaction(j, p_credit, p_topup, p_call);
