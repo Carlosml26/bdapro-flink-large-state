@@ -259,7 +259,7 @@
         {
           "expr": "rate(kafka_server_brokertopicmetrics_bytesin_total{job=\"kafka\",topic!=\"\"}[30s])",
           "intervalFactor": 2,
-          "legendFormat": "{{topic}}",
+          "legendFormat": "{{instance}}-{{topic}}",
           "metric": "kafka_server_brokertopicmetrics_bytesin_total",
           "refId": "A",
           "step": 4
@@ -355,7 +355,7 @@
         {
           "expr": "rate(kafka_server_brokertopicmetrics_messagesin_total{job=\"kafka\",topic!=\"\"}[30s])",
           "intervalFactor": 2,
-          "legendFormat": "{{topic}}",
+          "legendFormat": "{{instance}}-{{topic}}",
           "metric": "kafka_server_brokertopicmetrics_messagesin_total",
           "refId": "A",
           "step": 4
@@ -1016,5 +1016,5 @@
   "timezone": "browser",
   "title": "Kafka Overview",
   "uid": "qnMPJLQWz",
-  "version": 8
+  "version": 9
 }
