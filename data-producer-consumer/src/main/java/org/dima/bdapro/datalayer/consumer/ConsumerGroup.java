@@ -1,6 +1,8 @@
 package org.dima.bdapro.datalayer.consumer;
 
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.dima.bdapro.analytics.LevelUsageStatistics;
 import org.dima.bdapro.analytics.Report;
 import org.dima.bdapro.analytics.ResellerUsageStatistics;
@@ -14,6 +16,8 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public final class ConsumerGroup {
+
+	private static final Logger LOG = LogManager.getLogger(ConsumerGroup.class);
 
 	private List<ConsumerThread> consumers;
 	private final AtomicInteger numberOfConsumers;
@@ -37,6 +41,27 @@ public final class ConsumerGroup {
 			Thread t = new Thread(ncThread);
 			t.start();
 		}
+
+		final Thread mainThread = Thread.currentThread();
+
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+
+			@Override
+			public void run() {
+				LOG.info("Shutdown hook invoked...");
+				for (ConsumerThread consumer: consumers) {
+					consumer.getInternalConsumer().wakeup();
+				}
+
+				try {
+					mainThread.join();
+				}
+				catch (InterruptedException e) {
+					LOG.error(e);
+				}
+
+			}
+		});
 	}
 
 	private List<Report> getRequiredReports(Properties properties) throws IOException {

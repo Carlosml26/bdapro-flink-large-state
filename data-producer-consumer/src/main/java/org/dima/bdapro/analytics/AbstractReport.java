@@ -1,5 +1,7 @@
 package org.dima.bdapro.analytics;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.dima.bdapro.datalayer.bean.TransactionWrapper;
 
 import java.io.BufferedWriter;
@@ -9,6 +11,8 @@ import java.io.IOException;
 
 public abstract class AbstractReport implements Report {
 
+	private static final Logger LOG = LogManager.getLogger(AbstractReport.class);
+
 	protected BufferedWriter outputFileWriter;
 	protected BufferedWriter statsFileWrtier;
 
@@ -16,6 +20,7 @@ public abstract class AbstractReport implements Report {
 	@Override
 	public void process(TransactionWrapper wrapper) {
 		processRecord(wrapper);
+		LOG.debug("Record Added: {}", wrapper);
 	}
 
 	@Override
@@ -30,7 +35,7 @@ public abstract class AbstractReport implements Report {
 			statsFileWrtier.flush();
 		}
 		catch (IOException e) {
-			e.printStackTrace();
+			LOG.error(e);
 		}
 	}
 
