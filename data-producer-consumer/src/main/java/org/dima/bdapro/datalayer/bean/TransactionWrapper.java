@@ -35,4 +35,13 @@ public class TransactionWrapper {
 	public void setEventTime(long eventTime) {
 		this.eventTime = eventTime;
 	}
+
+	@Override
+	public String toString() {
+		return "TransactionWrapper{" +
+				"t=" + t +
+				", ingestionTime=" + ingestionTime +
+				", eventTime=" + eventTime +
+				'}';
+	}
 }

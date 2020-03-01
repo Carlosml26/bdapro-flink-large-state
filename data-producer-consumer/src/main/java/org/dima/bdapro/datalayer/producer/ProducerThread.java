@@ -4,6 +4,8 @@ import com.google.common.util.concurrent.RateLimiter;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.IntegerSerializer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.dima.bdapro.datalayer.bean.Transaction;
 import org.dima.bdapro.datalayer.bean.bytesarray.TransactionSerializer;
 import org.dima.bdapro.datalayer.generator.DataGenerator;
@@ -13,6 +15,8 @@ import java.io.IOException;
 import java.util.Properties;
 
 public class ProducerThread implements Runnable {
+
+	private static final Logger LOG = LogManager.getLogger(ProducerThread.class);
 
 	private final KafkaProducer<Integer, Transaction> producer;
 	private final String topic;
@@ -45,6 +49,8 @@ public class ProducerThread implements Runnable {
 		for (int j = 0; j < numberOfMessages; j++) {
 			Transaction msg;
 			msg = dataGenerator.genTransaction(j, p_credit, p_topup, p_call);
+
+			LOG.debug("Produced record ... {}", msg);
 			if (msg == null) {
 				throw new RuntimeException("The proportion of the transactions is not correct");
 			}
