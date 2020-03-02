@@ -16,7 +16,8 @@ public final class ProducerGroup {
 
 	public ProducerGroup() throws IOException {
 		int numberOfProducers = Integer.parseInt(PropertiesHandler.getInstance().getModuleProperties().getProperty("n_producers"));
-		producers = new ArrayList<>();
+		producers = new ArrayList<>(numberOfProducers);
+
 
 		int maxMessagesPerSecond = Integer.parseInt(PropertiesHandler.getInstance().getModuleProperties().getProperty("max_rate_messages"));
 		int maxNumberOfMessages = Integer.parseInt(PropertiesHandler.getInstance().getModuleProperties().getProperty("max_number_messages"));
@@ -44,24 +45,19 @@ public final class ProducerGroup {
 			@Override
 			public void run() {
 				LOG.info("Shutdown hook invoked...");
-				for (ProducerThread producerThread : producers) {
+
+				for (int i = 0; i < producers.size(); i++) {
+					ProducerThread producerThread = producers.get(i);
 					producerThread.getInternalProducer().flush();
 					producerThread.getInternalProducer().close();
 				}
-
-				try {
-					mainThread.join();
-				}
-				catch (InterruptedException e) {
-					LOG.error(e);
-				}
-
 			}
 		});
 	}
 
 	public void execute() {
-		for (ProducerThread ncThread : producers) {
+		for (int i = 0; i < producers.size(); i++) {
+			ProducerThread ncThread = producers.get(i);
 			Thread t = new Thread(ncThread);
 			t.start();
 		}

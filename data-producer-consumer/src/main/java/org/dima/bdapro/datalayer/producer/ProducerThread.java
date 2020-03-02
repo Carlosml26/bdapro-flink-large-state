@@ -3,6 +3,7 @@ package org.dima.bdapro.datalayer.producer;
 import com.google.common.util.concurrent.RateLimiter;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,7 +27,6 @@ public class ProducerThread implements Runnable {
 	private final int maxMessagesPerSecond;
 	private final int numberOfMessages;
 
-
 	public ProducerThread(int producerNumber, int maxMessagesPerSecond, int numberOfMessages) throws IOException {
 		this.props = PropertiesHandler.getInstance().getModuleProperties();
 		this.maxMessagesPerSecond = maxMessagesPerSecond;
@@ -44,18 +44,25 @@ public class ProducerThread implements Runnable {
 		int p_call = Integer.parseInt(props.getProperty("datagenerator.transaction.p_call", "1"));
 		final RateLimiter rateLimiter = RateLimiter.create(maxMessagesPerSecond);
 
-		for (int j = 0; j < numberOfMessages; j++) {
-			Transaction msg;
-			msg = dataGenerator.genTransaction(j, p_credit, p_topup, p_call);
+		try {
+			for (int j = 0; j < numberOfMessages; j++) {
 
-			LOG.debug("Produced record ... {}", msg);
-			if (msg == null) {
-				throw new RuntimeException("The proportion of the transactions is not correct");
+
+				Transaction msg;
+				msg = dataGenerator.genTransaction(j, p_credit, p_topup, p_call);
+
+				LOG.debug("Produced record ... {}", msg);
+				if (msg == null) {
+					throw new RuntimeException("The proportion of the transactions is not correct");
+				}
+				rateLimiter.acquire();
+
+				producer.send(new ProducerRecord<Integer, Transaction>(topic, producerNumber, msg));
+
 			}
-			rateLimiter.acquire();
-
-			producer.send(new ProducerRecord<Integer, Transaction>(topic, producerNumber, msg));
-
+		}
+		catch (InterruptException | IllegalStateException e) {
+			LOG.error("Shutting down thread {}", Thread.currentThread().getName());
 		}
 
 	}
