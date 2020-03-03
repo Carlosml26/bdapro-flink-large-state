@@ -4,12 +4,12 @@ org/dima/bdapro/flink/JoinStreamJob$3.class
 org/dima/bdapro/flink/datalayer/json/TransactionDeserializationSchema.class
 org/dima/bdapro/flink/JoinStreamJob.class
 org/dima/bdapro/flink/ReduceTransactionFunction.class
-org/dima/bdapro/flink/AggregationStreamingJob$1.class
 org/dima/bdapro/flink/JoinStreamJob$4.class
+org/dima/bdapro/flink/AggregationStreamingJob$1.class
 org/dima/bdapro/flink/JoinWindowFunction.class
 org/dima/bdapro/flink/JoinStreamJob$1.class
 org/dima/bdapro/flink/AggregationStreamingJob$2.class
 org/dima/bdapro/flink/JoinStreamJob$6.class
 org/dima/bdapro/flink/JoinStreamJob$2.class
-org/dima/bdapro/flink/AggregationStreamingJob$3.class
 org/dima/bdapro/flink/MedianWindowFunction.class
+org/dima/bdapro/flink/AggregationStreamingJob$3.class
