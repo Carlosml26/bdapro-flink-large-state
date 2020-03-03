@@ -80,7 +80,7 @@ public class AggregationStreamingJob {
 				.filter(x -> x.f0.getProfileId().equals(RESELLER_TRANSACTION_PROFILE));
 
 		SingleOutputStreamOperator<Tuple3<Long, Long, Long>> aggPerResellerId = ct.keyBy((KeySelector<Tuple2<Transaction, Long>, String>) x -> (args[0].equals("id"))?x.f0.getSenderId():x.f0.getSenderType())
-				.timeWindow(Time.milliseconds(Integer.parseInt(props.getProperty("flink.query.agg_per_ressellerId.time_window_size_ms"))))
+				.timeWindow(Time.milliseconds(Integer.parseInt(props.getProperty("flink.query.agg.time_window_size_ms"))))
 				.apply(new MedianWindowFunction())
 				.map(new SendProcLatencyMap());
 

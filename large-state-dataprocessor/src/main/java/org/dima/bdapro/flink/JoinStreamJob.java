@@ -3,13 +3,8 @@ package org.dima.bdapro.flink;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
-import org.apache.flink.api.common.functions.RichMapFunction;
-import org.apache.flink.api.common.state.ValueState;
-import org.apache.flink.api.common.state.ValueStateDescriptor;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.*;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
@@ -54,7 +49,7 @@ public class JoinStreamJob {
         STREAM_EXECUTION_ENVIRONMENT = StreamExecutionEnvironment.getExecutionEnvironment();
         STREAM_EXECUTION_ENVIRONMENT.enableCheckpointing(Long.parseLong(props.getProperty("flink.checkpointing.delay")), CheckpointingMode.EXACTLY_ONCE);
         STREAM_EXECUTION_ENVIRONMENT.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-        STREAM_EXECUTION_ENVIRONMENT.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.join")));
+        STREAM_EXECUTION_ENVIRONMENT.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.default")));
 
 
         FlinkKafkaConsumer<Transaction> consumer = new FlinkKafkaConsumer<>(
@@ -78,7 +73,7 @@ public class JoinStreamJob {
             consumer.setStartFromLatest();
         }
 
-        return STREAM_EXECUTION_ENVIRONMENT.addSource(consumer);//.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.sink")));
+        return STREAM_EXECUTION_ENVIRONMENT.addSource(consumer).setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.source")));
     }
 
     private static void calculateRewardedSubscribers(DataStream<Transaction> transactionStream, Properties props) {
@@ -120,13 +115,9 @@ public class JoinStreamJob {
                         )
                     )
                 )
-                //.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.sink")))
                 .apply(new JoinWindowFunction())
-                //.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.sink")))
                 .keyBy(0)
-                //.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.window")))
                 .reduce(new ReduceTransactionFunction())
-                .setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.sink")))
                 .process(new ProcessFunction<Tuple6<String, Double, String, Double, Long, Long>, Tuple3<Long, Long, Long>>() {
                     @Override
                     public void processElement(Tuple6<String, Double, String, Double, Long, Long> t, Context context, Collector<Tuple3<Long, Long, Long>> collector) throws Exception {
@@ -139,8 +130,7 @@ public class JoinStreamJob {
 
                         collector.collect(new Tuple3<Long, Long, Long>(eventLatency, procLatency, t.f4));
                     }
-                })
-                .setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.window")));
+                });
 
         joinedDataStream.writeAsCsv(outputDir+"latency_query_join.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
         //joinedDataStream.keyBy(0).map(new JoinLatencyMap()).writeAsCsv("latency_query_join.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
