@@ -1,9 +1,14 @@
 package org.dima.bdapro.flink;
 
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.tuple.*;
+import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.Tuple5;
 import org.apache.flink.core.fs.FileSystem;
+import org.apache.flink.metrics.Counter;
+import org.apache.flink.metrics.Gauge;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -18,7 +23,6 @@ import org.apache.flink.util.Collector;
 
 import org.dima.bdapro.datalayer.bean.Transaction;
 import org.dima.bdapro.flink.datalayer.json.TransactionDeserializationSchema;
-
 import org.dima.bdapro.utils.LiveMedianCalculator;
 import org.dima.bdapro.utils.PropertiesHandler;
 
@@ -39,7 +43,7 @@ public class AggregationStreamingJob {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.enableCheckpointing(Long.parseLong(props.getProperty("flink.checkpointing.delay")), CheckpointingMode.EXACTLY_ONCE);
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-		env.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.sink")));
+		env.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.default")));
 
 		FlinkKafkaConsumer<Transaction> consumer = new FlinkKafkaConsumer<Transaction>(
 				props.getProperty("topic"),
@@ -64,7 +68,7 @@ public class AggregationStreamingJob {
 		}
 
 		DataStream<Transaction> transactionStream = env.addSource(consumer).setParallelism(
-				Integer.parseInt(props.getProperty("flink.parallelism.sink")));
+				Integer.parseInt(props.getProperty("flink.parallelism.source")));
 
 		DataStream<Tuple2<Transaction, Long>> ct = transactionStream
 				.map(new MapFunction<Transaction, Tuple2<Transaction, Long>>() {
@@ -73,31 +77,19 @@ public class AggregationStreamingJob {
 						return new Tuple2<>(transaction, System.currentTimeMillis());
 					}
 				})
-				.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.sink")))// put timestamp for latency
-				.filter(x -> x.f0.getProfileId().equals(RESELLER_TRANSACTION_PROFILE))
-				.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.sink")));
+				.filter(x -> x.f0.getProfileId().equals(RESELLER_TRANSACTION_PROFILE));
 
 		SingleOutputStreamOperator<Tuple3<Long, Long, Long>> aggPerResellerId = ct.keyBy((KeySelector<Tuple2<Transaction, Long>, String>) x -> (args[0].equals("id"))?x.f0.getSenderId():x.f0.getSenderType())
 				.timeWindow(Time.milliseconds(Integer.parseInt(props.getProperty("flink.query.agg_per_ressellerId.time_window_size_ms"))))
 				.apply(new MedianWindowFunction())
-				.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.window")))
-				.map(new MapFunction<Tuple5<String, Integer, Double, Long, Long>, Tuple3<Long, Long, Long>>() {
-					@Override
-					public Tuple3<Long, Long, Long> map(Tuple5<String, Integer, Double, Long, Long> t) throws Exception {
-						long timestamp = System.currentTimeMillis();
-						long eventLatency = timestamp-t.f3;
-						long procLatency = timestamp-t.f4;
-						return new Tuple3<>(eventLatency, procLatency, t.f3);
-					}
-				})
-				.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.window")));
+				.map(new SendProcLatencyMap());
 
 		aggPerResellerId.writeAsCsv(outputDir+"latency_query_sender_" +args[0]+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
 		//aggPerResellerId.map(x -> new Tuple3<String, Integer, Double>(x.f0, x.f1, x.f2)).writeAsCsv(outputDir+"result_query_sender_"+args[0]+".csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
 		// execute program
-		env.execute("Flink Streaming Java API Skeleton");
+		env.execute("Aggregation Streaming Job");
 	}
 
 }
@@ -130,4 +122,63 @@ class MedianWindowFunction implements WindowFunction<Tuple2<Transaction, Long>, 
 		out.collect(new Tuple5<>(s, medianCalculator.count(), medianCalculator.median().getTransactionAmount(), maxEventTime, maxProcTime));
 
 	}
+
+}
+
+class SendProcLatencyMap extends RichMapFunction<Tuple5<String, Integer, Double, Long, Long>, Tuple3<Long, Long, Long>>  {
+
+	private transient double processingTimeValueGauge = 0;
+	private transient double eventTimeValueGauge = 0;
+	private transient Gauge ere;
+	private transient Counter numberEventCount;
+
+	@Override
+	public void open(org.apache.flink.configuration.Configuration config) throws Exception {
+		this.numberEventCount = getRuntimeContext()
+				.getMetricGroup()
+				.counter("eventCounter");
+
+		this.ere = getRuntimeContext()
+				.getMetricGroup()
+				.gauge("ProcessingLatencyGauge2", new Gauge<Double>() {
+					@Override
+					public Double getValue() {
+						return processingTimeValueGauge;
+					}
+				});
+
+
+		getRuntimeContext()
+				.getMetricGroup()
+				.gauge("ProcessingLatencyGauge", new Gauge<Double>() {
+					@Override
+					public Double getValue() {
+						return processingTimeValueGauge;
+					}
+				});
+
+		getRuntimeContext()
+				.getMetricGroup()
+				.gauge("ProcessingLatencyGauge", new Gauge<Double>() {
+					@Override
+					public Double getValue() {
+						return eventTimeValueGauge;
+					}
+				});
+	}
+
+
+	@Override
+	public Tuple3<Long, Long, Long> map(Tuple5<String, Integer, Double, Long, Long> t) throws Exception {
+		long timestamp = System.currentTimeMillis();
+		long eventLatency = timestamp-t.f3;
+		long procLatency = timestamp-t.f4;
+
+		eventTimeValueGauge = eventLatency;
+		processingTimeValueGauge = procLatency;
+		numberEventCount.inc();
+
+		return new Tuple3<>(eventLatency, procLatency, t.f3);
+	}
+
 }
