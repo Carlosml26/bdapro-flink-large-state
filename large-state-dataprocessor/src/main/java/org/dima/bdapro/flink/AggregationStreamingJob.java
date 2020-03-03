@@ -129,8 +129,10 @@ class SendProcLatencyMap extends RichMapFunction<Tuple5<String, Integer, Double,
 
 	private transient double processingTimeValueGauge = 0;
 	private transient double eventTimeValueGauge = 0;
-	private transient Gauge ere;
 	private transient Counter numberEventCount;
+	private transient double processingTimeSum = 0;
+	private transient double eventTimeSum = 0;
+
 
 	@Override
 	public void open(org.apache.flink.configuration.Configuration config) throws Exception {
@@ -138,15 +140,6 @@ class SendProcLatencyMap extends RichMapFunction<Tuple5<String, Integer, Double,
 				.getMetricGroup()
 				.counter("eventCounter");
 
-		this.ere = getRuntimeContext()
-				.getMetricGroup()
-				.gauge("ProcessingLatencyGauge2", new Gauge<Double>() {
-					@Override
-					public Double getValue() {
-						return processingTimeValueGauge;
-					}
-				});
-
 
 		getRuntimeContext()
 				.getMetricGroup()
@@ -159,7 +152,7 @@ class SendProcLatencyMap extends RichMapFunction<Tuple5<String, Integer, Double,
 
 		getRuntimeContext()
 				.getMetricGroup()
-				.gauge("ProcessingLatencyGauge", new Gauge<Double>() {
+				.gauge("EventLatencyGauge", new Gauge<Double>() {
 					@Override
 					public Double getValue() {
 						return eventTimeValueGauge;
@@ -174,9 +167,12 @@ class SendProcLatencyMap extends RichMapFunction<Tuple5<String, Integer, Double,
 		long eventLatency = timestamp-t.f3;
 		long procLatency = timestamp-t.f4;
 
-		eventTimeValueGauge = eventLatency;
-		processingTimeValueGauge = procLatency;
 		numberEventCount.inc();
+		eventTimeSum += eventLatency;
+		processingTimeSum += procLatency;
+
+		eventTimeValueGauge = eventTimeSum/numberEventCount.getCount();
+		processingTimeValueGauge = processingTimeSum/numberEventCount.getCount();
 
 		return new Tuple3<>(eventLatency, procLatency, t.f3);
 	}

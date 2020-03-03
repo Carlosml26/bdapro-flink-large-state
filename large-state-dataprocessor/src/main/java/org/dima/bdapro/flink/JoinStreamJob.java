@@ -3,9 +3,12 @@ package org.dima.bdapro.flink;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
+import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.core.fs.FileSystem;
+import org.apache.flink.metrics.Counter;
+import org.apache.flink.metrics.Gauge;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -132,7 +135,7 @@ public class JoinStreamJob {
                     }
                 });
 
-        joinedDataStream.writeAsCsv(outputDir+"latency_query_join.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+        joinedDataStream.map(new ProcEventLatencyMap()).writeAsCsv(outputDir+"latency_query_join.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
         //joinedDataStream.keyBy(0).map(new JoinLatencyMap()).writeAsCsv("latency_query_join.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
     }
@@ -174,4 +177,57 @@ class ReduceTransactionFunction implements ReduceFunction<Tuple6<String, Double,
 
         return new Tuple6<>(t0.f0,t0.f1,t1.f2, t0.f3+t1.f3, maxEvent, maxProc);
     }
+}
+
+
+
+class ProcEventLatencyMap extends RichMapFunction<Tuple3<Long, Long, Long>, Tuple3<Long, Long, Long>> {
+
+    private transient double processingTimeValueGauge = 0;
+    private transient double eventTimeValueGauge = 0;
+    private transient Counter numberEventCount;
+    private transient double processingTimeSum = 0;
+    private transient double eventTimeSum = 0;
+
+
+    @Override
+    public void open(org.apache.flink.configuration.Configuration config) throws Exception {
+        this.numberEventCount = getRuntimeContext()
+                .getMetricGroup()
+                .counter("eventCounter");
+
+
+        getRuntimeContext()
+                .getMetricGroup()
+                .gauge("ProcessingLatencyGauge", new Gauge<Double>() {
+                    @Override
+                    public Double getValue() {
+                        return processingTimeValueGauge;
+                    }
+                });
+
+        getRuntimeContext()
+                .getMetricGroup()
+                .gauge("EventLatencyGauge", new Gauge<Double>() {
+                    @Override
+                    public Double getValue() {
+                        return eventTimeValueGauge;
+                    }
+                });
+    }
+
+
+    @Override
+    public Tuple3<Long, Long, Long> map(Tuple3<Long, Long, Long> t) throws Exception {
+
+        numberEventCount.inc();
+        eventTimeSum += t.f0;
+        processingTimeSum += t.f1;
+
+        eventTimeValueGauge = eventTimeSum/numberEventCount.getCount();
+        processingTimeValueGauge = processingTimeSum/numberEventCount.getCount();
+
+        return t;
+    }
+
 }
