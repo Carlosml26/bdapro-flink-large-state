@@ -20,13 +20,13 @@ rule_files:
 # Here it's Prometheus itself.
 scrape_configs:
   # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
- # - job_name: 'kafka'
+  - job_name: 'kafka'
 
     # metrics_path defaults to '/metrics'
     # scheme defaults to 'http'.
 
- #   static_configs:
-  #    - targets: ['localhost:7071', 'localhost:7072']
+    static_configs:
+      - targets: ['localhost:7071', 'localhost:7072']
 
   - job_name: 'flink'
     scrape_interval: 5s
@@ -35,3 +35,11 @@ scrape_configs:
 
     static_configs:
      - targets: ['localhost:9250', 'localhost:9251']
+
+  - job_name: 'java'
+    scrape_interval: 5s
+      # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+      - targets: ['localhost:8580']

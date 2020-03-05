@@ -3,7 +3,9 @@ package org.dima.bdapro.analytics;
 import org.dima.bdapro.datalayer.bean.Transaction;
 import org.dima.bdapro.datalayer.bean.TransactionWrapper;
 
+import javax.management.*;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +27,20 @@ public class RewardedSubscribers extends AbstractReport {
 	public static Report getInstance() {
 		if (INSTANCE == null) {
 			INSTANCE = new RewardedSubscribers();
+
+			Metrics metrics = new Metrics();
+			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+			ObjectName rewardedUsageStatisticsName = null;
+
+			try {
+				System.out.println("entra");
+				rewardedUsageStatisticsName = new ObjectName("com.rewardedUsageStatistics.metrics:type=rewardedUsageStatistics");
+				mbs.registerMBean(metrics, rewardedUsageStatisticsName);
+			} catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException | MalformedObjectNameException e) {
+				e.printStackTrace();
+			}
+
+			INSTANCE.setMetrics(metrics);
 		}
 		return INSTANCE;
 	}
@@ -89,9 +105,17 @@ public class RewardedSubscribers extends AbstractReport {
 
 		Long transactionSum;
 
+		//Initialize metrics
+		metrics.setTotalNumTransactions(0);
+		eventTimeLatencySum = 0;
+		processingTimeLatencySum= 0;
+
+
 		synchronized (resellerTransactionMap) {
 			maxEventTime = 0L;
 			maxProcTime = 0L;
+
+
 
 			for (Map.Entry<String, List<TransactionWrapper>> entry : resellerTransactionMap.entrySet()) {
 
@@ -107,6 +131,20 @@ public class RewardedSubscribers extends AbstractReport {
 				}
 
 				timestamp = System.currentTimeMillis();
+
+				//Prometheus
+				long eventLatency = timestamp-maxEventTime;
+				long procLatency = timestamp-maxProcTime;
+
+				metrics.incTotalNumTransactions();
+
+				eventTimeLatencySum += eventLatency;
+				processingTimeLatencySum += procLatency;
+
+				metrics.setEventTimeLatency(eventTimeLatencySum/metrics.getTotalNumTransactions());
+				metrics.setProcessingTimeLatency(processingTimeLatencySum/metrics.getTotalNumTransactions());
+
+				System.out.println(metrics.getEventTimeLatency());
 
 				//logic
 				if (isRewardedSubscriber(entry.getKey(), entry.getValue())) {

@@ -4,7 +4,9 @@ import org.dima.bdapro.datalayer.bean.Transaction;
 import org.dima.bdapro.datalayer.bean.TransactionWrapper;
 import org.dima.bdapro.utils.TransactionMedianCalculator;
 
+import javax.management.*;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,6 +25,21 @@ public class LevelUsageStatistics extends AbstractReport {
 	public static Report getInstance() {
 		if (INSTANCE == null) {
 			INSTANCE = new LevelUsageStatistics();
+
+
+			Metrics metrics = new Metrics();
+			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+			ObjectName levelUsageStatistics = null;
+
+			try {
+				levelUsageStatistics = new ObjectName("com.levelUsageStatistics.metrics:type=levelUsageStatistics");
+				mbs.registerMBean(metrics, levelUsageStatistics);
+			} catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException | MalformedObjectNameException e) {
+				e.printStackTrace();
+			}
+
+			INSTANCE.setMetrics(metrics);
+
 		}
 		return INSTANCE;
 	}
@@ -72,6 +89,11 @@ public class LevelUsageStatistics extends AbstractReport {
 		String outputFormat = "%s, %d,%.2f";
 		Long timestamp;
 
+		//Initialize metrics
+		metrics.setTotalNumTransactions(0);
+		eventTimeLatencySum = 0;
+		processingTimeLatencySum= 0;
+
 		synchronized (transactionMap) {
 			for (Map.Entry<String, TransactionMedianCalculator> entry : transactionMap.entrySet()) {
 				TransactionWrapper wrapper = entry.getValue().median();
@@ -79,6 +101,19 @@ public class LevelUsageStatistics extends AbstractReport {
 					continue;
 				}
 				timestamp = System.currentTimeMillis();
+
+				//Set metrics
+				double eventLatency = timestamp-wrapper.getEventTime();
+				double procLatency = timestamp-wrapper.getIngestionTime();
+
+				metrics.incTotalNumTransactions();
+
+				eventTimeLatencySum += eventLatency;
+				processingTimeLatencySum += procLatency;
+
+				metrics.setEventTimeLatency(eventTimeLatencySum/metrics.getTotalNumTransactions());
+				metrics.setProcessingTimeLatency(processingTimeLatencySum/metrics.getTotalNumTransactions());
+
 
 				outputFileWriter.append(String.format(outputFormat, entry.getKey(), wrapper.getEventTime(), wrapper.getT().getTransactionAmount()));
 				outputFileWriter.newLine();

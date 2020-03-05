@@ -4,14 +4,16 @@ import org.dima.bdapro.datalayer.bean.Transaction;
 import org.dima.bdapro.datalayer.bean.TransactionWrapper;
 import org.dima.bdapro.utils.TransactionMedianCalculator;
 
+import javax.management.*;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.dima.bdapro.utils.Constants.RESELLER_TRANSACTION_PROFILE;
 import static org.dima.bdapro.utils.Constants.TOPUP_PROFILE;
 
-public class ResellerUsageStatistics extends AbstractReport {
+public class ResellerUsageStatistics extends AbstractReport implements Report {
 
 	private ConcurrentHashMap<String, TransactionMedianCalculator> transactionMap = new ConcurrentHashMap<>();
 
@@ -22,7 +24,22 @@ public class ResellerUsageStatistics extends AbstractReport {
 
 	public static Report getInstance() {
 		if (INSTANCE == null) {
+
 			INSTANCE = new ResellerUsageStatistics();
+
+			Metrics metrics = new Metrics();
+			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+			ObjectName resellerUsageStatisticsName = null;
+
+			try {
+				resellerUsageStatisticsName = new ObjectName("com.resellerUsageStatistics.metrics:type=resellerUsageStatistics");
+				mbs.registerMBean(metrics, resellerUsageStatisticsName);
+			} catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException | MalformedObjectNameException e) {
+				e.printStackTrace();
+			}
+
+			INSTANCE.setMetrics(metrics);
+
 		}
 		return INSTANCE;
 	}
@@ -72,6 +89,12 @@ public class ResellerUsageStatistics extends AbstractReport {
 		String outputFormat = "%s, %d,%.2f";
 		Long timestamp;
 
+
+		//Initialize metrics
+		metrics.setTotalNumTransactions(0);
+		eventTimeLatencySum = 0;
+		processingTimeLatencySum= 0;
+
 		synchronized (transactionMap) {
 			for (Map.Entry<String, TransactionMedianCalculator> entry : transactionMap.entrySet()) {
 				TransactionWrapper wrapper = entry.getValue().median();
@@ -80,6 +103,19 @@ public class ResellerUsageStatistics extends AbstractReport {
 				}
 
 				timestamp = System.currentTimeMillis();
+
+				//Set metrics
+				double eventLatency = timestamp-wrapper.getEventTime();
+				double procLatency = timestamp-wrapper.getIngestionTime();
+
+				metrics.incTotalNumTransactions();
+
+				eventTimeLatencySum += eventLatency;
+				processingTimeLatencySum += procLatency;
+
+				metrics.setEventTimeLatency(eventTimeLatencySum/metrics.getTotalNumTransactions());
+				metrics.setProcessingTimeLatency(processingTimeLatencySum/metrics.getTotalNumTransactions());
+
 
 				outputFileWriter.append(String.format(outputFormat, entry.getKey(), wrapper.getEventTime(), wrapper.getT().getTransactionAmount()));
 				outputFileWriter.newLine();
