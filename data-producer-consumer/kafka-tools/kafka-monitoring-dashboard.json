@@ -34,7 +34,7 @@
         "y": 0
       },
       "hiddenSeries": false,
-      "id": 13,
+      "id": 18,
       "legend": {
         "avg": false,
         "current": false,
@@ -51,7 +51,6 @@
         "dataLinks": []
       },
       "percentage": false,
-      "pluginVersion": "6.6.2",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -61,11 +60,13 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg(flink_taskmanager_job_task_operator_EventLatencyGauge)",
+          "expr": "com_resellerUsageStatistics_metrics_resellerUsageStatistics_EventTimeLatency",
+          "legendFormat": "Event Time Latency",
           "refId": "A"
         },
         {
-          "expr": "",
+          "expr": "com_resellerUsageStatistics_metrics_resellerUsageStatistics_ProcessingTimeLatency",
+          "legendFormat": "Processing Time Latency",
           "refId": "B"
         }
       ],
@@ -73,7 +74,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "EventTimeLatency",
+      "title": "Event and Processing Time Latecy (JAVA)",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -93,7 +94,7 @@
           "label": null,
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -125,7 +126,7 @@
         "y": 0
       },
       "hiddenSeries": false,
-      "id": 15,
+      "id": 20,
       "legend": {
         "avg": false,
         "current": false,
@@ -151,7 +152,8 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg(flink_taskmanager_job_task_operator_ProcessingLatencyGauge)",
+          "expr": "com_resellerUsageStatistics_metrics_resellerUsageStatistics_EventTimeLatency/com_resellerUsageStatistics_metrics_resellerUsageStatistics_ProcessingTimeLatency",
+          "legendFormat": "Even ProcessingTimeLatency",
           "refId": "A"
         }
       ],
@@ -159,7 +161,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "ProcessingTimeLatency",
+      "title": "Event Time latency  vs Processin time ratio (JAVA)",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -179,7 +181,191 @@
           "label": null,
           "logBase": 1,
           "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
           "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "hiddenSeries": false,
+      "id": 13,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pluginVersion": "6.6.2",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "avg(flink_taskmanager_job_task_operator_EventLatencyGauge)",
+          "legendFormat": "Event Time Latency",
+          "refId": "A"
+        },
+        {
+          "expr": "avg(flink_taskmanager_job_task_operator_ProcessingLatencyGauge)",
+          "legendFormat": "Processing Time latency",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Event and Processing Time Latency (FLINK)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "hiddenSeries": false,
+      "id": 16,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pluginVersion": "6.6.2",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "avg(flink_taskmanager_job_task_operator_EventLatencyGauge) / avg(flink_taskmanager_job_task_operator_ProcessingLatencyGauge)",
+          "refId": "A"
+        },
+        {
+          "expr": "",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Event Time latency  vs Processin time ratio (FLINK)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
           "show": true
         },
         {
@@ -211,7 +397,7 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 16
       },
       "hiddenSeries": false,
       "id": 11,
@@ -275,7 +461,7 @@
           "label": "Bytes/s",
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -307,7 +493,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 16
       },
       "hiddenSeries": false,
       "id": 4,
@@ -371,7 +557,7 @@
           "label": "Messages/s",
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -403,7 +589,7 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 14
+        "y": 22
       },
       "hiddenSeries": false,
       "id": 5,
@@ -467,7 +653,7 @@
           "label": "Bytes/s",
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -499,7 +685,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 14
+        "y": 22
       },
       "hiddenSeries": false,
       "id": 10,
@@ -563,7 +749,7 @@
           "label": "Messages/s",
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -595,7 +781,7 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 20
+        "y": 28
       },
       "hiddenSeries": false,
       "id": 6,
@@ -627,6 +813,7 @@
       "targets": [
         {
           "expr": "sum without(instance)(rate(kafka_server_brokertopicmetrics_bytesout_total{job=\"kafka\",topic!=\"\"}[30s]))",
+          "interval": "",
           "intervalFactor": 2,
           "legendFormat": "{{topic}}",
           "metric": "kafka_server_brokertopicmetrics_bytesin_total",
@@ -659,7 +846,7 @@
           "label": "Bytes/s",
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -691,7 +878,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 20
+        "y": 28
       },
       "hiddenSeries": false,
       "id": 9,
@@ -755,7 +942,7 @@
           "label": "Messages/s",
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -784,7 +971,7 @@
         "h": 5,
         "w": 8,
         "x": 0,
-        "y": 26
+        "y": 34
       },
       "hiddenSeries": false,
       "id": 8,
@@ -876,7 +1063,7 @@
         "h": 5,
         "w": 8,
         "x": 8,
-        "y": 26
+        "y": 34
       },
       "hiddenSeries": false,
       "id": 2,
@@ -974,7 +1161,7 @@
         "h": 5,
         "w": 8,
         "x": 16,
-        "y": 26
+        "y": 34
       },
       "hiddenSeries": false,
       "id": 3,
@@ -1072,7 +1259,7 @@
         "h": 6,
         "w": 8,
         "x": 0,
-        "y": 31
+        "y": 39
       },
       "hiddenSeries": false,
       "id": 1,
@@ -1154,7 +1341,7 @@
       }
     }
   ],
-  "refresh": false,
+  "refresh": "10s",
   "schemaVersion": 22,
   "style": "dark",
   "tags": [],
@@ -1162,8 +1349,8 @@
     "list": []
   },
   "time": {
-    "from": "2020-03-03T20:47:51.333Z",
-    "to": "2020-03-03T20:49:07.745Z"
+    "from": "now-30m",
+    "to": "now"
   },
   "timepicker": {
     "refresh_intervals": [
@@ -1193,5 +1380,5 @@
   "timezone": "browser",
   "title": "Kafka Overview",
   "uid": "qnMPJLQWz",
-  "version": 4
+  "version": 8
 }
