@@ -57,7 +57,7 @@ public class ConsumerThread implements Runnable {
 
 			while (true) {
 				ConsumerRecords<String, Transaction> records = internalConsumer.poll(Duration.ofMillis(Long.parseLong(props.getProperty("dataconsumer.kafka.polling-time"))));
-				LOG.debug("Returned After polling ....");
+				LOG.debug("Returned After polling .... Returned records: {} , subscription: {}",records.count(), internalConsumer.subscription());
 
 				for (ConsumerRecord<String, Transaction> record : records) {
 
@@ -82,7 +82,7 @@ public class ConsumerThread implements Runnable {
 							else {
 								LOG.debug("Thread going to sleep: {}",Thread.currentThread().getName());
 //								System.out.println(Thread.currentThread().getName() + ": sleeping");
-								lock.wait(); // TODO: All threads go to sleep, somehow.
+								lock.wait(2000); // TODO: All threads go to sleep, somehow.
 							}
 						}
 

@@ -21,10 +21,5 @@ public final class ConsumerStarter {
         LOG.info("Consumer Started...");
         consumerGroup.execute();
 
-        try {
-            Thread.sleep(100000);
-        } catch (InterruptedException ie) {
-
-        }
     }
 }

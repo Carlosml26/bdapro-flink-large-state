@@ -37,9 +37,19 @@ public final class ConsumerGroup {
 	}
 
 	public void execute() {
+		boolean isFirst = true;
 		for (ConsumerThread ncThread : consumers) {
 			Thread t = new Thread(ncThread);
 			t.start();
+			try {
+				if (isFirst) {
+					Thread.sleep(500);
+					isFirst = false;
+				}
+			}
+			catch (InterruptedException e) {
+				LOG.debug("{} interrupted", Thread.currentThread().getName());
+			}
 		}
 
 		final Thread mainThread = Thread.currentThread();
