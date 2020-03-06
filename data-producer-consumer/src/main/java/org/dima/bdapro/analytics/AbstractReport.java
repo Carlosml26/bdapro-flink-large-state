@@ -20,12 +20,6 @@ public abstract class AbstractReport implements Report {
 
 	protected Metrics metrics;
 
-	protected double eventTimeSum = 0;
-	protected double processingTimeSum = 0;
-	protected final Gauge processingTimeLatencyGauge = Gauge.build().name("ProcessingLatencyGauge").help("Inprogress requests.").register();
-	protected final Gauge eventTimeLatencyGauge = Gauge.build().name("EventLatencyGauge").help("Inprogress requests.").register();
-	protected static final Counter numberEventCount = Counter.build().name("reventCounter").help("Total requests.").register();
-
 
 	protected double eventTimeLatencySum = 0;
 	protected double processingTimeLatencySum = 0;

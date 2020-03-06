@@ -90,10 +90,6 @@ public class ResellerUsageStatistics extends AbstractReport implements Report {
 		Long timestamp;
 
 
-		//Initialize metrics
-		metrics.setTotalNumTransactions(0);
-		eventTimeLatencySum = 0;
-		processingTimeLatencySum= 0;
 
 		synchronized (transactionMap) {
 			for (Map.Entry<String, TransactionMedianCalculator> entry : transactionMap.entrySet()) {
