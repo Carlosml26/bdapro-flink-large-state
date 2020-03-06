@@ -11,6 +11,7 @@ public interface Report {
 	void outputResults() throws IOException;
 	void init(String outputFileName, String statsFileName) throws IOException;
 	void close() throws IOException;
+	Metrics getMetrics();
 }
 
 

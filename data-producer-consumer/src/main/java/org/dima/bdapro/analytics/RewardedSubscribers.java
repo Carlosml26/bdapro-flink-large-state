@@ -105,11 +105,6 @@ public class RewardedSubscribers extends AbstractReport {
 
 		Long transactionSum;
 
-		//Initialize metrics
-		metrics.setTotalNumTransactions(0);
-		eventTimeLatencySum = 0;
-		processingTimeLatencySum= 0;
-
 
 		synchronized (resellerTransactionMap) {
 			maxEventTime = 0L;
@@ -143,8 +138,6 @@ public class RewardedSubscribers extends AbstractReport {
 
 				metrics.setEventTimeLatency(eventTimeLatencySum/metrics.getTotalNumTransactions());
 				metrics.setProcessingTimeLatency(processingTimeLatencySum/metrics.getTotalNumTransactions());
-
-				System.out.println(metrics.getEventTimeLatency());
 
 				//logic
 				if (isRewardedSubscriber(entry.getKey(), entry.getValue())) {

@@ -5,11 +5,14 @@ public class Metrics implements MetricsMBean {
     private Double processingTimeLatency;
     private Double eventTimeLatency;
     private Integer totalNumTransactions;
+    private Integer totalNumberMessagesIn;
+
 
     public Metrics (){
         processingTimeLatency = 0.0;
         eventTimeLatency = 0.0;
         totalNumTransactions = 0;
+        totalNumberMessagesIn = 0;
     }
 
     @Override
@@ -42,20 +45,19 @@ public class Metrics implements MetricsMBean {
         this.totalNumTransactions = totalNumTransactions;
     }
 
-    @Override
-    public void sumProcessingTimeLatency(Double processingTimeLatency) {
-        this.processingTimeLatency += processingTimeLatency;
-    }
-
-    @Override
-    public void sumEventTimeLatency(Double eventTimeLatency) {
-        this.eventTimeLatency += eventTimeLatency;
-    }
 
     @Override
     public void incTotalNumTransactions() {
         this.totalNumTransactions++;
     }
 
+    @Override
+    public Integer getTotalNumberMessagesIn() {
+        return totalNumberMessagesIn;
+    }
 
+    @Override
+    public void addMessage() {
+        totalNumberMessagesIn++;
+    }
 }
