@@ -8,12 +8,15 @@ import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.dima.bdapro.analytics.Metrics;
 import org.dima.bdapro.analytics.Report;
 import org.dima.bdapro.datalayer.bean.Transaction;
 import org.dima.bdapro.datalayer.bean.TransactionWrapper;
 import org.dima.bdapro.datalayer.bean.bytesarray.TransactionDeserializer;
 
+import javax.management.*;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -42,6 +45,8 @@ public class ConsumerThread implements Runnable {
 		this.numberProducers = numberProducers;
 		maxNumberProducers = Integer.parseInt(props.getProperty("n_consumers"));
 		this.reports = reports;
+
+
 	}
 
 	@Override
@@ -59,6 +64,7 @@ public class ConsumerThread implements Runnable {
 				ConsumerRecords<String, Transaction> records = internalConsumer.poll(Duration.ofMillis(Long.parseLong(props.getProperty("dataconsumer.kafka.polling-time"))));
 				LOG.debug("Returned After polling .... Returned records: {} , subscription: {}",records.count(), internalConsumer.subscription());
 
+
 				for (ConsumerRecord<String, Transaction> record : records) {
 
 					Transaction transaction = record.value();
@@ -70,6 +76,7 @@ public class ConsumerThread implements Runnable {
 						synchronized (lock) {
 							LOG.debug("Materializing Windows ....");
 							numberProducers.decrementAndGet();
+
 							if (numberProducers.get() == 0) {
 
 								processReports();
@@ -112,7 +119,9 @@ public class ConsumerThread implements Runnable {
 	}
 
 	private void addRecordToRespectiveQueues(TransactionWrapper transaction) {
-		reports.forEach(x -> x.process(transaction));
+		reports.forEach(x ->{ x.process(transaction);
+		x.getMetrics().addMessage();
+		});
 	}
 
 	private void processReports() {

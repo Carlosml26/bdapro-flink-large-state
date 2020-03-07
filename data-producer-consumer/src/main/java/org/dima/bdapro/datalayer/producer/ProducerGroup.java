@@ -38,7 +38,6 @@ public final class ProducerGroup {
 			producers.add(npThread);
 		}
 
-		final Thread mainThread = Thread.currentThread();
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 
@@ -53,6 +52,12 @@ public final class ProducerGroup {
 				}
 			}
 		});
+
+		try {
+			Thread.sleep(500);
+		}catch (InterruptedException e) {
+			LOG.debug("{} interrupted", Thread.currentThread().getName());
+		}
 	}
 
 	public void execute() {
@@ -60,6 +65,7 @@ public final class ProducerGroup {
 			ProducerThread ncThread = producers.get(i);
 			Thread t = new Thread(ncThread);
 			t.start();
+
 		}
 	}
 }

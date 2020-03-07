@@ -4,10 +4,10 @@ public interface MetricsMBean {
     Double getProcessingTimeLatency();
     Double getEventTimeLatency();
     Integer getTotalNumTransactions();
-    public void setProcessingTimeLatency (Double processingTimeLatency);
-    public void setEventTimeLatency (Double eventTimeLatency);
-    public void setTotalNumTransactions (Integer totalNumTransactions);
-    public void sumProcessingTimeLatency (Double processingTimeLatency);
-    public void sumEventTimeLatency (Double eventTimeLatency);
-    public void incTotalNumTransactions ();
+    Integer getTotalNumberMessagesIn ();
+    void setProcessingTimeLatency(Double processingTimeLatency);
+    void setEventTimeLatency(Double eventTimeLatency);
+    void setTotalNumTransactions(Integer totalNumTransactions);
+    void incTotalNumTransactions();
+    void addMessage();
 }

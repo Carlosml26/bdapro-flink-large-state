@@ -90,11 +90,6 @@ public class LevelUsageStatistics extends AbstractReport {
 		String outputFormat = "%s, %d,%.2f";
 		Long timestamp;
 
-		//Initialize metrics
-		metrics.setTotalNumTransactions(0);
-		eventTimeLatencySum = 0;
-		processingTimeLatencySum= 0;
-
 		synchronized (transactionMap) {
 			for (Map.Entry<String, TransactionMedianCalculatorWithQueue> entry : transactionMap.entrySet()) {
 				TransactionWrapper wrapper = entry.getValue().median();

@@ -19,11 +19,8 @@ public abstract class AbstractReport implements Report {
 
 	protected Metrics metrics;
 
-
 	protected double eventTimeLatencySum = 0;
 	protected double processingTimeLatencySum = 0;
-
-
 
 	@Override
 	public void process(TransactionWrapper wrapper) {
@@ -74,4 +71,7 @@ public abstract class AbstractReport implements Report {
 		this.metrics =  metrics;
 	}
 
+	public Metrics getMetrics() {
+		return metrics;
+	}
 }
