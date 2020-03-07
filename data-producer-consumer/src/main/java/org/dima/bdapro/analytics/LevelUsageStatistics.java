@@ -2,7 +2,8 @@ package org.dima.bdapro.analytics;
 
 import org.dima.bdapro.datalayer.bean.Transaction;
 import org.dima.bdapro.datalayer.bean.TransactionWrapper;
-import org.dima.bdapro.utils.TransactionMedianCalculator;
+import org.dima.bdapro.jmx.Metrics;
+import org.dima.bdapro.utils.TransactionMedianCalculatorWithQueue;
 
 import javax.management.*;
 import java.io.IOException;
@@ -15,7 +16,7 @@ import static org.dima.bdapro.utils.Constants.TOPUP_PROFILE;
 
 public class LevelUsageStatistics extends AbstractReport {
 
-	private ConcurrentHashMap<String, TransactionMedianCalculator> transactionMap = new ConcurrentHashMap<>();
+	private ConcurrentHashMap<String, TransactionMedianCalculatorWithQueue> transactionMap = new ConcurrentHashMap<>();
 
 	private static LevelUsageStatistics INSTANCE;
 
@@ -59,13 +60,13 @@ public class LevelUsageStatistics extends AbstractReport {
 
 		if (transaction.getProfileId().equals(RESELLER_TRANSACTION_PROFILE) || transaction.getProfileId().equals(TOPUP_PROFILE)) {
 
-			TransactionMedianCalculator transactionQueue = transactionMap.get(transactionSenderType);
+			TransactionMedianCalculatorWithQueue transactionQueue = transactionMap.get(transactionSenderType);
 			if (transactionQueue == null) {
 				synchronized (transactionMap) {
 					transactionQueue = transactionMap.get(transactionSenderType);
 					if (transactionQueue == null) { // double locking to for thread-safe initialization.
 
-						transactionQueue = new TransactionMedianCalculator();
+						transactionQueue = new TransactionMedianCalculatorWithQueue();
 						transactionMap.put(transactionSenderType, transactionQueue);
 					}
 				}
@@ -78,7 +79,7 @@ public class LevelUsageStatistics extends AbstractReport {
 	public void reset() {
 		synchronized (transactionMap) {
 			super.reset();
-			for (TransactionMedianCalculator e : transactionMap.values()) {
+			for (TransactionMedianCalculatorWithQueue e : transactionMap.values()) {
 				e.reset();
 			}
 		}
@@ -95,7 +96,7 @@ public class LevelUsageStatistics extends AbstractReport {
 		processingTimeLatencySum= 0;
 
 		synchronized (transactionMap) {
-			for (Map.Entry<String, TransactionMedianCalculator> entry : transactionMap.entrySet()) {
+			for (Map.Entry<String, TransactionMedianCalculatorWithQueue> entry : transactionMap.entrySet()) {
 				TransactionWrapper wrapper = entry.getValue().median();
 				if (wrapper == null) {
 					continue;

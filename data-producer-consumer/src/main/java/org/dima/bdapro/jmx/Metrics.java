@@ -1,4 +1,4 @@
-package org.dima.bdapro.analytics;
+package org.dima.bdapro.jmx;
 
 public class Metrics implements MetricsMBean {
 

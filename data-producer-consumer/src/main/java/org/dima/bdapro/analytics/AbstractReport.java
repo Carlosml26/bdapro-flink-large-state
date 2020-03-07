@@ -1,10 +1,9 @@
 package org.dima.bdapro.analytics;
 
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dima.bdapro.datalayer.bean.TransactionWrapper;
+import org.dima.bdapro.jmx.Metrics;
 
 import java.io.BufferedWriter;
 import java.io.File;
