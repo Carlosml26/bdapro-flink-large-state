@@ -9,7 +9,9 @@ import org.dima.bdapro.analytics.ResellerUsageStatistics;
 import org.dima.bdapro.analytics.RewardedSubscribers;
 import org.dima.bdapro.utils.PropertiesHandler;
 
+import javax.management.*;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -76,6 +78,7 @@ public final class ConsumerGroup {
 
 	private List<Report> getRequiredReports(Properties properties) throws IOException {
 		List<Report> reports = new ArrayList<>(1);
+
 		final String query = properties.getProperty("dataconsumer.query");
 		if ("ResellerUsageStatistics".equals(query)) {
 			reports.add(ResellerUsageStatistics.getInstance());
@@ -86,10 +89,11 @@ public final class ConsumerGroup {
 			LevelUsageStatistics.getInstance().init("java-level-output.txt", "java-level-stats.txt");
 		}
 		else if ("RewardedSubscribers".equals(query)) {
-			reports.add(RewardedSubscribers.getInstance());
+			reports.add( RewardedSubscribers.getInstance());
 			RewardedSubscribers.getInstance().init("java-subscribers-output.txt", "java-subscribers-stats.txt");
 		}
 		else if ("ALL".equals(query)) {
+
 			reports.add(ResellerUsageStatistics.getInstance());
 			ResellerUsageStatistics.getInstance().init("java-reseller-output.txt", "java-reseller-stats.txt");
 
