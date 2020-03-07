@@ -8,15 +8,12 @@ import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.dima.bdapro.analytics.Metrics;
 import org.dima.bdapro.analytics.Report;
 import org.dima.bdapro.datalayer.bean.Transaction;
 import org.dima.bdapro.datalayer.bean.TransactionWrapper;
 import org.dima.bdapro.datalayer.bean.bytesarray.TransactionDeserializer;
 
-import javax.management.*;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;

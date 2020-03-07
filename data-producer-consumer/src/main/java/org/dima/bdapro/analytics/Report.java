@@ -1,6 +1,7 @@
 package org.dima.bdapro.analytics;
 
 import org.dima.bdapro.datalayer.bean.TransactionWrapper;
+import org.dima.bdapro.jmx.Metrics;
 
 import java.io.IOException;
 
