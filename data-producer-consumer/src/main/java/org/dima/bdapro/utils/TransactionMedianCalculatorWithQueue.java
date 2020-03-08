@@ -17,9 +17,6 @@ public class TransactionMedianCalculatorWithQueue {
 	private PriorityQueue<TransactionWrapper> low = new PriorityQueue<>(new TComparator().reversed());
 	private PriorityQueue<TransactionWrapper> high = new PriorityQueue<>(new TComparator());
 
-	private int lowerHalfCount;
-	private int upperHalfCount;
-
 	private long maxProcTime;
 	private long maxEventTime;
 
@@ -67,8 +64,8 @@ public class TransactionMedianCalculatorWithQueue {
 	}
 
 	public TransactionWrapper median() {
-		if (lowerHalfCount == upperHalfCount) {
-			return lowerHalfCount == 0? null : average.apply(low.peek(), high.peek());
+		if (low.size() == high.size()) {
+			return low.size() == 0? null : average.apply(low.peek(), high.peek());
 		}
 		else {
 			return low.peek();
@@ -76,15 +73,12 @@ public class TransactionMedianCalculatorWithQueue {
 	}
 
 	public int count() {
-		return upperHalfCount + lowerHalfCount;
+		return low.size() + high.size();
 	}
 
 	public synchronized void reset() {
 		low.clear();
 		high.clear();
-
-		lowerHalfCount = 0;
-		upperHalfCount = 0;
 
 		maxProcTime = 0L;
 		maxEventTime = 0L;

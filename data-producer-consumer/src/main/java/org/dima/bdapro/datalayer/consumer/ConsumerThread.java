@@ -71,11 +71,10 @@ public class ConsumerThread implements Runnable {
 					if (currentTime > windowEnd) {
 
 						synchronized (lock) {
-							LOG.debug("Materializing Windows ....");
 							numberProducers.decrementAndGet();
 
 							if (numberProducers.get() == 0) {
-
+								LOG.debug("Materializing Windows .... {}", Thread.currentThread().getName());
 								processReports();
 
 								numberProducers.set(maxNumberProducers);
