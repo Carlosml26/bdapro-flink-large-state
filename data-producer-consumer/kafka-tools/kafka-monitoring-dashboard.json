@@ -95,7 +95,7 @@
           "label": null,
           "logBase": 1,
           "max": null,
-          "min": "0",
+          "min": null,
           "show": true
         },
         {
@@ -182,7 +182,7 @@
           "label": null,
           "logBase": 1,
           "max": null,
-          "min": "0",
+          "min": null,
           "show": true
         },
         {
@@ -277,7 +277,7 @@
           "format": "Bps",
           "label": "Bytes/s",
           "logBase": 1,
-          "max": "200000000",
+          "max": "100000000",
           "min": "0",
           "show": true
         },
@@ -341,7 +341,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum without(instance)(rate(kafka_server_brokertopicmetrics_messagesin_total{job=\"kafka\",topic=\"TransactionsTopic\"}[10s]))",
+          "expr": "sum without(instance)(rate(kafka_server_brokertopicmetrics_messagesin_total{job=\"kafka\",topic=\"TransactionsTopic\"}[30s]))",
           "intervalFactor": 2,
           "legendFormat": "{{topic}}",
           "metric": "kafka_server_brokertopicmetrics_messagesin_total",
@@ -373,7 +373,7 @@
           "format": "short",
           "label": "Messages/s",
           "logBase": 1,
-          "max": "400000",
+          "max": "200000",
           "min": "0",
           "show": true
         },
@@ -469,7 +469,7 @@
           "format": "Bps",
           "label": "Bytes/s",
           "logBase": 1,
-          "max": "200000000",
+          "max": "100000000",
           "min": "0",
           "show": true
         },
@@ -533,7 +533,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(kafka_server_brokertopicmetrics_messagesin_total{job=\"kafka\",topic=\"TransactionsTopic\"}[10s])",
+          "expr": "rate(kafka_server_brokertopicmetrics_messagesin_total{job=\"kafka\",topic=\"TransactionsTopic\"}[30s])",
           "intervalFactor": 2,
           "legendFormat": "{{instance}}",
           "metric": "kafka_server_brokertopicmetrics_messagesin_total",
@@ -565,7 +565,7 @@
           "format": "short",
           "label": "Messages/s",
           "logBase": 1,
-          "max": "400000",
+          "max": "200000",
           "min": "0",
           "show": true
         },
@@ -629,7 +629,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum without(instance)(rate(kafka_server_brokertopicmetrics_bytesout_total{job=\"kafka\",topic=\"TransactionsTopic\"}[30s]))",
+          "expr": "sum without(instance)(rate(kafka_server_brokertopicmetrics_bytesout_total{job=\"kafka\",topic!=\"\"}[30s]))",
           "interval": "",
           "intervalFactor": 2,
           "legendFormat": "{{topic}}",
@@ -662,7 +662,7 @@
           "format": "Bps",
           "label": "Bytes/s",
           "logBase": 1,
-          "max": "200000000",
+          "max": "100000000",
           "min": "0",
           "show": true
         },
@@ -692,13 +692,13 @@
       "fillGradient": 0,
       "grid": {},
       "gridPos": {
-        "h": 6,
+        "h": 8,
         "w": 12,
         "x": 12,
         "y": 20
       },
       "hiddenSeries": false,
-      "id": 9,
+      "id": 21,
       "isNew": true,
       "legend": {
         "avg": false,
@@ -726,7 +726,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum without(instance)(rate(com_resellerUsageStatistics_metrics_resellerUsageStatistics_TotalNumberMessagesIn[10s]))",
+          "expr": "sum without(instance)(rate(com_resellerUsageStatistics_metrics_resellerUsageStatistics_TotalNumberMessagesIn[30s]))",
           "intervalFactor": 2,
           "legendFormat": "{{topic}}",
           "metric": "kafka_server_brokertopicmetrics_messagesin_total",
@@ -758,7 +758,7 @@
           "format": "short",
           "label": "Messages/s",
           "logBase": 1,
-          "max": "400000",
+          "max": "200000",
           "min": "0",
           "show": true
         },
@@ -884,10 +884,10 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 26
+        "y": 28
       },
       "hiddenSeries": false,
-      "id": 21,
+      "id": 9,
       "isNew": true,
       "legend": {
         "avg": false,
@@ -915,9 +915,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(kafka_server_brokertopicmetrics_bytesout_total{job=\"kafka\",topic=\"TransactionsTopic\"}[10s])/478)",
+          "expr": "sum(rate(flink_taskmanager_job_task_numRecordsOut{task_name=\"Source:_Custom_Source\"}[10s]))",
           "intervalFactor": 2,
-          "legendFormat": "{{instance}}",
+          "legendFormat": "{{topic}}",
           "metric": "kafka_server_brokertopicmetrics_messagesin_total",
           "refId": "A",
           "step": 4
@@ -927,7 +927,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "est. Messages Out Per Topic",
+      "title": "Messages Out Per Topic (FLINK Consumption rate)",
       "tooltip": {
         "msResolution": false,
         "shared": true,
@@ -946,97 +946,6 @@
         {
           "format": "short",
           "label": "Messages/s",
-          "logBase": 1,
-          "max": "400000",
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 32
-      },
-      "hiddenSeries": false,
-      "id": 16,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pluginVersion": "6.6.2",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "avg(flink_taskmanager_job_task_operator_EventLatencyGauge) / avg(flink_taskmanager_job_task_operator_ProcessingLatencyGauge)",
-          "refId": "A"
-        },
-        {
-          "expr": "",
-          "refId": "B"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Event Time latency  vs Processin time ratio (FLINK)",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
           "logBase": 1,
           "max": null,
           "min": "0",
@@ -1127,6 +1036,97 @@
           "logBase": 1,
           "max": null,
           "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": null,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 34
+      },
+      "hiddenSeries": false,
+      "id": 16,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pluginVersion": "6.6.2",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "avg(flink_taskmanager_job_task_operator_EventLatencyGauge) / avg(flink_taskmanager_job_task_operator_ProcessingLatencyGauge)",
+          "refId": "A"
+        },
+        {
+          "expr": "",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Event Time latency  vs Processin time ratio (FLINK)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
           "show": true
         },
         {
@@ -1258,7 +1258,7 @@
         "h": 5,
         "w": 8,
         "x": 8,
-        "y": 40
+        "y": 42
       },
       "hiddenSeries": false,
       "id": 2,
@@ -1341,6 +1341,104 @@
     },
     {
       "aliasColors": {
+        "localhost:7071": "#BA43A9"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Prometheus",
+      "editable": true,
+      "error": false,
+      "fill": 1,
+      "fillGradient": 0,
+      "grid": {},
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 16,
+        "y": 42
+      },
+      "hiddenSeries": false,
+      "id": 22,
+      "isNew": true,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 2,
+      "links": [],
+      "nullPointMode": "connected",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum without(area)(jvm_memory_bytes_used{job=\"java\"})",
+          "intervalFactor": 2,
+          "legendFormat": "{{instance}}",
+          "metric": "jvm_memory_bytes_used",
+          "refId": "A",
+          "step": 4
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "JVM Memory Used",
+      "tooltip": {
+        "msResolution": false,
+        "shared": true,
+        "sort": 0,
+        "value_type": "cumulative"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "bytes",
+          "label": "Memory",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
         "localhost:7071": "#890F02"
       },
       "bars": false,
@@ -1356,7 +1454,7 @@
         "h": 5,
         "w": 8,
         "x": 16,
-        "y": 40
+        "y": 47
       },
       "hiddenSeries": false,
       "id": 3,
@@ -1477,5 +1575,5 @@
   "timezone": "browser",
   "title": "Kafka Overview",
   "uid": "qnMPJLQWz",
-  "version": 13
+  "version": 18
 }
