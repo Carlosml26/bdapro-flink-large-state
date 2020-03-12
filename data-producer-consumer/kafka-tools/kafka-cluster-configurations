@@ -1,0 +1,72 @@
+#Conigure Kafka Cluster
+https://dzone.com/articles/how-to-setup-kafka-cluster
+
+Number of nodes: 3
+
+Node 1: kafka_2.11-2.4.0_1
+	remove logs: rm -r logs
+	create logs: mkdir logs
+	edit ./config/server.properties:
+		broker.id=1
+		listeners=PLAINTEXT://ibm-power-3.dima.tu-berlin.de:9091
+		log.dirs=/home/hadoop/bdapro_flink_benchmark/kafka_2.11-2.4.0_1/logs
+		zookeeper.connect=ibm-power-3.dima.tu-berlin.de:2181
+
+	start Zookeeper in this node:
+		./bin/zookeeper-server-start.sh ./config/zookeeper.properties
+
+	start kafka:
+		./bin/zookeeper-server-start.sh ./config/zookeeper.properties
+		
+
+
+Node 2: kafka_2.11-2.4.0_2
+	remove logs: rm -r logs
+	create logs: mkdir logs
+	edit ./config/server.properties:
+		broker.id=2
+		listeners=PLAINTEXT://ibm-power-4.dima.tu-berlin.de:9091
+		log.dirs=/home/hadoop/bdapro_flink_benchmark/kafka_2.11-2.4.0_2/logs
+		zookeeper.connect=ibm-power-3.dima.tu-berlin.de:2181
+
+	start kafka:
+		./bin/zookeeper-server-start.sh ./config/zookeeper.properties
+
+
+
+Node 3: kafka_2.11-2.4.0_3
+	remove logs: rm -r logs
+	create logs: mkdir logs
+	edit ./config/server.properties:
+		broker.id=3
+		listeners=PLAINTEXT://ibm-power-5.dima.tu-berlin.de:9091
+		log.dirs=/home/hadoop/bdapro_flink_benchmark/kafka_2.11-2.4.0_3/logs
+		zookeeper.connect=ibm-power-3.dima.tu-berlin.de:2181
+
+	start kafka:
+		./bin/zookeeper-server-start.sh ./config/zookeeper.properties
+
+
+
+Kafka commands:
+	./bin/kafka-topics.sh --create --zookeeper ibm-power-3.dima.tu-berlin.de:2181 --replication-factor 3 --partitions 10 --topic demo2
+	./bin/kafka-topics.sh --list --zookeeper ibm-power-3.dima.tu-berlin.de:2181
+	./bin/kafka-topics.sh --describe --topic demo2 --zookeeper ibm-power-3.dima.tu-berlin.de:2181
+	./bin/kafka-topics.sh --delete --zookeeper ibm-power-3.dima.tu-berlin.de:2181 --topic demo2
+
+
+nodeTemplate:
+	copy original folder: cp kafka_2.11-2.4.0 kafka_2.11-2.4.0_X
+	go to the folder: cd kafka_2.11-2.4.0_X
+	create logs: mkdir logs
+	edit ./config/server.properties: nano ./config/server.properties
+		broker.id=X
+		listeners=PLAINTEXT://LOCALHOST:9091
+		log.dirs=/home/hadoop/bdapro_flink_benchmark/kafka_2.11-2.4.0_X/logs
+		zookeeper.connect=ZOOKEEPER_PATH:2181
+
+
+
+
+
+

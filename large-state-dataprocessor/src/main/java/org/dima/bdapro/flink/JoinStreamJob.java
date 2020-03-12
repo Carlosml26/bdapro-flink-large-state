@@ -4,13 +4,11 @@ import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.functions.RichMapFunction;
-import org.apache.flink.api.common.state.ValueState;
-import org.apache.flink.api.common.state.ValueStateDescriptor;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.*;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.FileSystem;
+import org.apache.flink.metrics.Counter;
+import org.apache.flink.metrics.Gauge;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -32,6 +30,9 @@ import java.util.Properties;
 import static org.dima.bdapro.utils.Constants.SUBSCRIBER_TRANSACTION_PROFILE;
 import static org.dima.bdapro.utils.Constants.TOPUP_PROFILE;
 
+/**
+ * Provides implementation of Rewarded Subscribers Query.
+ */
 public class JoinStreamJob {
     private static String outputDir;
     private static StreamExecutionEnvironment STREAM_EXECUTION_ENVIRONMENT;
@@ -54,7 +55,7 @@ public class JoinStreamJob {
         STREAM_EXECUTION_ENVIRONMENT = StreamExecutionEnvironment.getExecutionEnvironment();
         STREAM_EXECUTION_ENVIRONMENT.enableCheckpointing(Long.parseLong(props.getProperty("flink.checkpointing.delay")), CheckpointingMode.EXACTLY_ONCE);
         STREAM_EXECUTION_ENVIRONMENT.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-        STREAM_EXECUTION_ENVIRONMENT.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism")));
+        STREAM_EXECUTION_ENVIRONMENT.setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.default")));
 
 
         FlinkKafkaConsumer<Transaction> consumer = new FlinkKafkaConsumer<>(
@@ -78,7 +79,7 @@ public class JoinStreamJob {
             consumer.setStartFromLatest();
         }
 
-        return STREAM_EXECUTION_ENVIRONMENT.addSource(consumer);
+        return STREAM_EXECUTION_ENVIRONMENT.addSource(consumer).setParallelism(Integer.parseInt(props.getProperty("flink.parallelism.source")));
     }
 
     private static void calculateRewardedSubscribers(DataStream<Transaction> transactionStream, Properties props) {
@@ -99,7 +100,7 @@ public class JoinStreamJob {
 
         final OutputTag<String> outputTag = new OutputTag<String>("side-output"){};
 
-        DataStream<Tuple2<Long, Long>> joinedDataStream = rts.join(sts)
+        DataStream<Tuple3<Long, Long, Long>> joinedDataStream = rts.join(sts)
                 .where(new KeySelector<Tuple2<Transaction, Long>, String>() {
                     @Override
                     public String getKey(Tuple2<Transaction, Long> transactionLongTuple2) throws Exception {
@@ -119,23 +120,25 @@ public class JoinStreamJob {
                                 )
                         )
                     )
-                ).apply(new JoinWindowFunction()).keyBy(0)
+                )
+                .apply(new JoinWindowFunction())
+                .keyBy(0)
                 .reduce(new ReduceTransactionFunction())
-                .process(new ProcessFunction<Tuple6<String, Double, String, Double, Long, Long>, Tuple2<Long, Long>>() {
+                .process(new ProcessFunction<Tuple6<String, Double, String, Double, Long, Long>, Tuple3<Long, Long, Long>>() {
                     @Override
-                    public void processElement(Tuple6<String, Double, String, Double, Long, Long> t, Context context, Collector<Tuple2<Long, Long>> collector) throws Exception {
+                    public void processElement(Tuple6<String, Double, String, Double, Long, Long> t, Context context, Collector<Tuple3<Long, Long, Long>> collector) throws Exception {
                         if (t.f3 >= 0.4*t.f1){
                             context.output(outputTag, t.f2);
                         }
+                        long timestamp = System.currentTimeMillis();
+                        long eventLatency = timestamp-t.f4;
+                        long procLatency = timestamp-t.f5;
 
-                        long eventLatency = System.currentTimeMillis()-t.f4;
-                        long procLatency = System.currentTimeMillis()-t.f5;
-
-                        collector.collect(new Tuple2<Long, Long>(eventLatency, procLatency));
+                        collector.collect(new Tuple3<Long, Long, Long>(eventLatency, procLatency, t.f4));
                     }
                 });
 
-        joinedDataStream.writeAsCsv(outputDir+"latency_query_join.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+        joinedDataStream.map(new ProcEventLatencyMap()).writeAsCsv(outputDir+"latency_query_join.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
         //joinedDataStream.keyBy(0).map(new JoinLatencyMap()).writeAsCsv("latency_query_join.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
     }
@@ -165,14 +168,71 @@ class ReduceTransactionFunction implements ReduceFunction<Tuple6<String, Double,
     public Tuple6<String, Double, String, Double, Long, Long> reduce(Tuple6<String, Double, String, Double, Long, Long> t0, Tuple6<String, Double, String, Double, Long, Long> t1)  {
         Long maxEvent, maxProc;
 
-        if (t0.f4>t1.f4){
+        if (t0.f4 > t1.f4)
             maxEvent = t0.f4;
-            maxProc = t0.f5;
-        }
-        else{
+        else
             maxEvent = t1.f4;
+
+        if (t0.f5 > t1.f5)
+            maxProc = t0.f5;
+        else
             maxProc = t1.f5;
-        }
+
         return new Tuple6<>(t0.f0,t0.f1,t1.f2, t0.f3+t1.f3, maxEvent, maxProc);
     }
+}
+
+
+/**
+ * Creates metrics for monitoring flink.
+ */
+class ProcEventLatencyMap extends RichMapFunction<Tuple3<Long, Long, Long>, Tuple3<Long, Long, Long>> {
+
+    private transient double processingTimeValueGauge = 0;
+    private transient double eventTimeValueGauge = 0;
+    private transient Counter numberEventCount;
+    private transient double processingTimeSum = 0;
+    private transient double eventTimeSum = 0;
+
+
+    @Override
+    public void open(org.apache.flink.configuration.Configuration config) throws Exception {
+        this.numberEventCount = getRuntimeContext()
+                .getMetricGroup()
+                .counter("eventCounter");
+
+
+        getRuntimeContext()
+                .getMetricGroup()
+                .gauge("ProcessingLatencyGauge", new Gauge<Double>() {
+                    @Override
+                    public Double getValue() {
+                        return processingTimeValueGauge;
+                    }
+                });
+
+        getRuntimeContext()
+                .getMetricGroup()
+                .gauge("EventLatencyGauge", new Gauge<Double>() {
+                    @Override
+                    public Double getValue() {
+                        return eventTimeValueGauge;
+                    }
+                });
+    }
+
+
+    @Override
+    public Tuple3<Long, Long, Long> map(Tuple3<Long, Long, Long> t) throws Exception {
+
+        numberEventCount.inc();
+        eventTimeSum += t.f0;
+        processingTimeSum += t.f1;
+
+        eventTimeValueGauge = eventTimeSum/numberEventCount.getCount();
+        processingTimeValueGauge = processingTimeSum/numberEventCount.getCount();
+
+        return t;
+    }
+
 }

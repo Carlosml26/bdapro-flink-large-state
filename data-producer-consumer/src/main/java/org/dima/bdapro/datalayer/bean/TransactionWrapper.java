@@ -1,5 +1,8 @@
 package org.dima.bdapro.datalayer.bean;
 
+/**
+ * A wrapper for {@link Transaction} that adds ingestion time and event time.
+ */
 public class TransactionWrapper {
 
 	private Transaction t;
@@ -34,5 +37,14 @@ public class TransactionWrapper {
 
 	public void setEventTime(long eventTime) {
 		this.eventTime = eventTime;
+	}
+
+	@Override
+	public String toString() {
+		return "TransactionWrapper{" +
+				"t=" + t +
+				", ingestionTime=" + ingestionTime +
+				", eventTime=" + eventTime +
+				'}';
 	}
 }

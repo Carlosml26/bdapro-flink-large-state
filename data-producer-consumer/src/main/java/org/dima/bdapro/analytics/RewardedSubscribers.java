@@ -2,8 +2,11 @@ package org.dima.bdapro.analytics;
 
 import org.dima.bdapro.datalayer.bean.Transaction;
 import org.dima.bdapro.datalayer.bean.TransactionWrapper;
+import org.dima.bdapro.jmx.Metrics;
 
+import javax.management.*;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +15,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import static org.dima.bdapro.utils.Constants.SUBSCRIBER_TRANSACTION_PROFILE;
 import static org.dima.bdapro.utils.Constants.TOPUP_PROFILE;
 
+/**
+ * A singleton class for Rewarded Subscriber query. The state of topup transactions and subscriber transactions are maintained in {@link ConcurrentHashMap}.
+ *
+ */
 public class RewardedSubscribers extends AbstractReport {
 
 	private ConcurrentHashMap<String, List<TransactionWrapper>> resellerTransactionMap = new ConcurrentHashMap<>();
@@ -25,6 +32,20 @@ public class RewardedSubscribers extends AbstractReport {
 	public static Report getInstance() {
 		if (INSTANCE == null) {
 			INSTANCE = new RewardedSubscribers();
+
+			Metrics metrics = new Metrics();
+			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+			ObjectName rewardedUsageStatisticsName = null;
+
+			try {
+				System.out.println("entra");
+				rewardedUsageStatisticsName = new ObjectName("com.rewardedUsageStatistics.metrics:type=rewardedUsageStatistics");
+				mbs.registerMBean(metrics, rewardedUsageStatisticsName);
+			} catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException | MalformedObjectNameException e) {
+				e.printStackTrace();
+			}
+
+			INSTANCE.setMetrics(metrics);
 		}
 		return INSTANCE;
 	}
@@ -33,7 +54,6 @@ public class RewardedSubscribers extends AbstractReport {
 		initOutputFile(outputFileName);
 		initStatsFile(statsFileName);
 	}
-
 
 	@Override
 	public void processRecord(TransactionWrapper transactionW) {
@@ -89,9 +109,12 @@ public class RewardedSubscribers extends AbstractReport {
 
 		Long transactionSum;
 
+
 		synchronized (resellerTransactionMap) {
 			maxEventTime = 0L;
 			maxProcTime = 0L;
+
+
 
 			for (Map.Entry<String, List<TransactionWrapper>> entry : resellerTransactionMap.entrySet()) {
 
@@ -108,6 +131,18 @@ public class RewardedSubscribers extends AbstractReport {
 
 				timestamp = System.currentTimeMillis();
 
+				//Prometheus
+				long eventLatency = timestamp-maxEventTime;
+				long procLatency = timestamp-maxProcTime;
+
+				metrics.incTotalNumTransactions();
+
+				eventTimeLatencySum += eventLatency;
+				processingTimeLatencySum += procLatency;
+
+				metrics.setEventTimeLatency(eventTimeLatencySum/metrics.getTotalNumTransactions());
+				metrics.setProcessingTimeLatency(processingTimeLatencySum/metrics.getTotalNumTransactions());
+
 				//logic
 				if (isRewardedSubscriber(entry.getKey(), entry.getValue())) {
 					outputFileWriter.append(String.format(outputFormat, entry.getKey(), maxEventTime));
@@ -120,6 +155,12 @@ public class RewardedSubscribers extends AbstractReport {
 		}
 	}
 
+	/**
+	 * business logic regarding if the subscriber fits the criteria of heavy usage.
+	 * @param key
+	 * @param resellertransactions
+	 * @return true if the subscriber is heavy user.
+	 */
 	private boolean isRewardedSubscriber(String key, List<TransactionWrapper> resellertransactions) {
 		List<TransactionWrapper> subscribertransactions = subscriberTransactionMap.get(key);
 
@@ -137,7 +178,7 @@ public class RewardedSubscribers extends AbstractReport {
 	}
 
 	private String getStatsOutput(Long maxEventTime, Long maxProcTime, Long timestamp) {
-		String statsFormat = "%d, %d"; // processing time latency, event time latency
+		String statsFormat = "%d, %d, %d"; // processing time latency, event time latency
 
 		long eventLatency = timestamp - maxEventTime;
 		long procLatency = timestamp - maxProcTime;
@@ -145,6 +186,7 @@ public class RewardedSubscribers extends AbstractReport {
 
 		return String.format(statsFormat,
 				eventLatency,
-				procLatency);
+				procLatency,
+				maxEventTime);
 	}
 }

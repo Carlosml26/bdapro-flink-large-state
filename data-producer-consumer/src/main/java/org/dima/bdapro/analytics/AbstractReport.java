@@ -1,21 +1,35 @@
 package org.dima.bdapro.analytics;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.dima.bdapro.datalayer.bean.TransactionWrapper;
+import org.dima.bdapro.jmx.Metrics;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
+/**
+ * It provides an abstract or partial implementation for {@link Report} interface. It can be used as a baseline for creating report queries.
+ * It provides functionality for writing stats and output to respective files.
+ */
 public abstract class AbstractReport implements Report {
+
+	private static final Logger LOG = LogManager.getLogger(AbstractReport.class);
 
 	protected BufferedWriter outputFileWriter;
 	protected BufferedWriter statsFileWrtier;
 
+	protected Metrics metrics;
+
+	protected double eventTimeLatencySum = 0;
+	protected double processingTimeLatencySum = 0;
 
 	@Override
 	public void process(TransactionWrapper wrapper) {
 		processRecord(wrapper);
+		LOG.debug("Record Added: {}", wrapper);
 	}
 
 	@Override
@@ -30,7 +44,7 @@ public abstract class AbstractReport implements Report {
 			statsFileWrtier.flush();
 		}
 		catch (IOException e) {
-			e.printStackTrace();
+			LOG.error(e);
 		}
 	}
 
@@ -51,9 +65,20 @@ public abstract class AbstractReport implements Report {
 		return new BufferedWriter(new FileWriter(file));
 	}
 
+	protected abstract void processRecord(TransactionWrapper tw);
+	protected abstract void outputResults() throws IOException;
+
 	@Override
 	public void close() throws IOException {
 		outputFileWriter.close();
 		statsFileWrtier.close();
+	}
+
+	public void setMetrics (Metrics metrics){
+		this.metrics =  metrics;
+	}
+
+	public Metrics getMetrics() {
+		return metrics;
 	}
 }
