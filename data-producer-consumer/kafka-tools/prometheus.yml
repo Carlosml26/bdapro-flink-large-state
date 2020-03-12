@@ -34,7 +34,7 @@ scrape_configs:
           # scheme defaults to 'http'.
 
     static_configs:
-     - targets: ['localhost:9250', 'localhost:9251']
+     - targets: ['localhost:9250', 'localhost:9251', 'localhost:9252','localhost:9253', 'localhost:9254']
 
   - job_name: 'java'
     scrape_interval: 2s

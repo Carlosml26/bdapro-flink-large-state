@@ -15,6 +15,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import static org.dima.bdapro.utils.Constants.SUBSCRIBER_TRANSACTION_PROFILE;
 import static org.dima.bdapro.utils.Constants.TOPUP_PROFILE;
 
+/**
+ * A singleton class for Rewarded Subscriber query. The state of topup transactions and subscriber transactions are maintained in {@link ConcurrentHashMap}.
+ *
+ */
 public class RewardedSubscribers extends AbstractReport {
 
 	private ConcurrentHashMap<String, List<TransactionWrapper>> resellerTransactionMap = new ConcurrentHashMap<>();
@@ -50,7 +54,6 @@ public class RewardedSubscribers extends AbstractReport {
 		initOutputFile(outputFileName);
 		initStatsFile(statsFileName);
 	}
-
 
 	@Override
 	public void processRecord(TransactionWrapper transactionW) {
@@ -152,6 +155,12 @@ public class RewardedSubscribers extends AbstractReport {
 		}
 	}
 
+	/**
+	 * business logic regarding if the subscriber fits the criteria of heavy usage.
+	 * @param key
+	 * @param resellertransactions
+	 * @return true if the subscriber is heavy user.
+	 */
 	private boolean isRewardedSubscriber(String key, List<TransactionWrapper> resellertransactions) {
 		List<TransactionWrapper> subscribertransactions = subscriberTransactionMap.get(key);
 

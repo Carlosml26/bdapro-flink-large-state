@@ -2,6 +2,9 @@ package org.dima.bdapro.datalayer.bean;
 
 import java.io.Serializable;
 
+/**
+ * Data model for the business case.
+ */
 public class Transaction implements Serializable {
 	private Long transactionTime;
 	private String transactionId;

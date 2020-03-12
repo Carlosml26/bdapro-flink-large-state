@@ -30,6 +30,10 @@ import java.util.Properties;
 
 import static org.dima.bdapro.utils.Constants.RESELLER_TRANSACTION_PROFILE;
 
+/**
+ * Implements Reseller Usage Statistics and Level Usage Statistics queries.
+ *
+ */
 public class AggregationStreamingJob {
 
 	public static void main(String[] args) throws Exception {
@@ -125,6 +129,9 @@ class MedianWindowFunction implements WindowFunction<Tuple2<Transaction, Long>, 
 
 }
 
+/**
+ * Creates the metrics for monitoring flink.
+ */
 class SendProcLatencyMap extends RichMapFunction<Tuple5<String, Integer, Double, Long, Long>, Tuple3<Long, Long, Long>>  {
 
 	private transient double processingTimeValueGauge = 0;

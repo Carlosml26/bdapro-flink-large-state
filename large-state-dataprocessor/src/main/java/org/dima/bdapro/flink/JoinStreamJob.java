@@ -30,6 +30,9 @@ import java.util.Properties;
 import static org.dima.bdapro.utils.Constants.SUBSCRIBER_TRANSACTION_PROFILE;
 import static org.dima.bdapro.utils.Constants.TOPUP_PROFILE;
 
+/**
+ * Provides implementation of Rewarded Subscribers Query.
+ */
 public class JoinStreamJob {
     private static String outputDir;
     private static StreamExecutionEnvironment STREAM_EXECUTION_ENVIRONMENT;
@@ -180,7 +183,9 @@ class ReduceTransactionFunction implements ReduceFunction<Tuple6<String, Double,
 }
 
 
-
+/**
+ * Creates metrics for monitoring flink.
+ */
 class ProcEventLatencyMap extends RichMapFunction<Tuple3<Long, Long, Long>, Tuple3<Long, Long, Long>> {
 
     private transient double processingTimeValueGauge = 0;

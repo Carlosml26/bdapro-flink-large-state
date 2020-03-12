@@ -14,6 +14,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import static org.dima.bdapro.utils.Constants.RESELLER_TRANSACTION_PROFILE;
 import static org.dima.bdapro.utils.Constants.TOPUP_PROFILE;
 
+/**
+ * A singleton class for Level Usage Statistics query. The state of topup transactions and credit transfer transactions are maintained in a single {@link ConcurrentHashMap}.
+ *
+ */
 public class LevelUsageStatistics extends AbstractReport {
 
 	private ConcurrentHashMap<String, TransactionMedianCalculatorWithQueue> transactionMap = new ConcurrentHashMap<>();

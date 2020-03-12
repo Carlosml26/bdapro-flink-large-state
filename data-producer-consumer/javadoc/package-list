@@ -1,0 +1,10 @@
+org.dima.bdapro.analytics
+org.dima.bdapro.datalayer.bean
+org.dima.bdapro.datalayer.bean.bytesarray
+org.dima.bdapro.datalayer.bean.json
+org.dima.bdapro.datalayer.consumer
+org.dima.bdapro.datalayer.generator
+org.dima.bdapro.datalayer.producer
+org.dima.bdapro.datalayer.producer.partitioner
+org.dima.bdapro.jmx
+org.dima.bdapro.utils

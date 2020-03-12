@@ -5,6 +5,12 @@ import org.dima.bdapro.datalayer.bean.TransactionWrapper;
 
 import java.util.function.BiFunction;
 
+/**
+ * An online way of calculating median. Implementation is inspired from:
+ * https://stackoverflow.com/questions/11955728/how-to-calculate-the-median-of-an-array/59905644#59905644
+ *
+ * This implementation is tuned for out {@link TransactionWrapper}
+ */
 public class TransactionMedianCalculator {
 
 	private BiFunction<TransactionWrapper, TransactionWrapper, Integer> comparator;

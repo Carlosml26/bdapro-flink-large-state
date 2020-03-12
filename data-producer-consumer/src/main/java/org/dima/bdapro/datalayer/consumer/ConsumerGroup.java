@@ -9,9 +9,7 @@ import org.dima.bdapro.analytics.ResellerUsageStatistics;
 import org.dima.bdapro.analytics.RewardedSubscribers;
 import org.dima.bdapro.utils.PropertiesHandler;
 
-import javax.management.*;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;

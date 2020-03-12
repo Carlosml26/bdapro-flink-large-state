@@ -8,6 +8,12 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.function.BiFunction;
 
+/**
+ * An online way of calculating median. Implementation is inspired from:
+ * https://stackoverflow.com/questions/11955728/how-to-calculate-the-median-of-an-array#answer-50570427
+ *
+ * This implementation is tuned for out {@link TransactionWrapper}
+ */
 public class TransactionMedianCalculatorWithQueue {
 
 	private BiFunction<TransactionWrapper, TransactionWrapper, Integer> comparator;

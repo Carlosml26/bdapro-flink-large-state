@@ -3,6 +3,9 @@ package org.dima.bdapro.utils;
 import java.io.*;
 import java.util.Properties;
 
+/**
+ * It handle the creation and loading of the properties given a property file.
+ */
 public class PropertiesHandler
 {
 	private static PropertiesHandler propertiesHandler;

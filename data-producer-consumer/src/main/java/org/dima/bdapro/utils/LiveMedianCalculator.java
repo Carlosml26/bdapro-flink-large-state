@@ -2,6 +2,11 @@ package org.dima.bdapro.utils;
 
 import java.util.function.BiFunction;
 
+/**
+ * Provides an online low memory and fast implementation of median.
+ * Solution inspired from: https://stackoverflow.com/questions/11955728/how-to-calculate-the-median-of-an-array/59905644#59905644
+ * @param <T>
+ */
 public class LiveMedianCalculator<T> {
 
 	private BiFunction<T, T, Integer> comparator;
@@ -18,6 +23,10 @@ public class LiveMedianCalculator<T> {
 		this.average = average;
 	}
 
+	/**
+	 * Add a new element.
+	 * @param e
+	 */
 	public void add(T e) {
 		if (lowerHalfCount <= upperHalfCount) {
 
